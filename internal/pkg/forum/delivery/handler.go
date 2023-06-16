@@ -21,14 +21,18 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	nickname, found := vars["nickname"]
 	if !found {
-		utils.Response(w, http.StatusNotFound, nil)
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid nickname"})
 		return
 	}
 
 	userS := models.User{}
 	userS.NickName = nickname
 
-	finalUser, _ := h.uc.GetUser(userS)
+	finalUser, err := h.uc.GetUser(r.Context(), userS)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "can`t find user " + nickname})
+		return
+	}
 	utils.Response(w, http.StatusOK, finalUser)
 	return
 }
@@ -49,11 +53,81 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	userS.NickName = nickname
 
-	finalUser, err := h.uc.CreateUser(userS)
-	if err == nil {
-		newU := finalUser[0]
-		utils.Response(w, http.StatusCreated, newU)
+	finalUser, err := h.uc.CreateUser(r.Context(), userS)
+	if err != nil {
+		utils.Response(w, http.StatusConflict, finalUser)
 		return
 	}
-	utils.Response(w, http.StatusConflict, finalUser)
+	newU := finalUser[0]
+	utils.Response(w, http.StatusCreated, newU) // TODO сразу прокинуть finalUser[0]
+	return
+}
+
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	nickname, found := vars["nickname"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, nil)
+		return
+	}
+
+	newUser := models.User{}
+	err := easyjson.UnmarshalFromReader(r.Body, &newUser)
+	if err != nil {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+	newUser.NickName = nickname
+
+	finalUser, err := h.uc.UpdateUser(r.Context(), newUser)
+	if err == models.Conflict {
+		utils.Response(w, http.StatusConflict, models.ErrMsg{Msg: "error"})
+		return
+	}
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "error"})
+		return
+	}
+
+	utils.Response(w, http.StatusOK, finalUser[0])
+	return
+}
+
+func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
+	//vars := mux.Vars(r)
+	//_, found := vars["title"]
+	//if !found {
+	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid title"})
+	//	return
+	//}
+	//_, found = vars["user"]
+	//if !found {
+	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid user"})
+	//	return
+	//}
+	//_, found = vars["slug"]
+	//if !found {
+	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+	//	return
+	//}
+
+	newForum := models.Forum{}
+	err := easyjson.UnmarshalFromReader(r.Body, &newForum)
+	if err != nil {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+
+	finalForum, err := h.uc.CreateForum(r.Context(), newForum)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "error"})
+		return
+	}
+	if err == models.Conflict {
+		utils.Response(w, http.StatusConflict, models.ErrMsg{Msg: "error"})
+		return
+	}
+
+	utils.Response(w, http.StatusCreated, finalForum)
+	return
 }
