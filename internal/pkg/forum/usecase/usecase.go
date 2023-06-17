@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 )
@@ -103,4 +104,24 @@ func (u *UseCase) GetThreadByForumSlug(ctx context.Context, slug string, limit s
 		return nil, models.NotFound
 	}
 	return u.repo.GetThreadByForumSlug(ctx, slug, limit, since, desc)
+}
+
+func (u *UseCase) CreatePosts(ctx context.Context, slugOrId string, posts []models.Post) ([]models.Post, error) {
+	foundThread, err := u.repo.GetThread(ctx, slugOrId)
+	if err != nil {
+		fmt.Println("usecase: ", err.Error())
+		return posts, models.NotFound
+	}
+
+	foundForum, err := u.repo.GetForumByThread(ctx, foundThread.ID)
+	if err != nil {
+		fmt.Println("usecase: ", err.Error())
+		return posts, models.NotFound
+	}
+
+	createdPosts, err := u.repo.CreatePosts(ctx, foundThread.ID, foundForum, posts)
+	if err != nil {
+		return createdPosts, err
+	}
+	return createdPosts, nil
 }

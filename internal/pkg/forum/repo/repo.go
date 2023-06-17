@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"strconv"
@@ -98,6 +99,17 @@ func (r *repoPostgres) GetForum(ctx context.Context, slug string) (models.Forum,
 		return models.Forum{}, models.NotFound
 	}
 	return finalForum, nil
+}
+
+func (r *repoPostgres) GetForumByThread(ctx context.Context, id int) (string, error) {
+	const selectForumByThread = `SELECT Forum FROM threads WHERE $1 = Id;`
+	row := r.Conn.QueryRow(ctx, selectForumByThread, id)
+	var forumSlug string
+	err := row.Scan(&forumSlug)
+	if err != nil {
+		return "", models.NotFound
+	}
+	return forumSlug, nil
 }
 
 func (r *repoPostgres) CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error) {
@@ -205,4 +217,28 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 		threads = append(threads, threadOne)
 	}
 	return threads, nil
+}
+
+func (r *repoPostgres) CreatePosts(ctx context.Context, thread int, forum string, posts []models.Post) ([]models.Post, error) {
+	const insertPost = `INSERT INTO posts (Author, Created, Forum, IsEdited, Message, Parent, Thread) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING Id, Author, Created, Forum, IsEdited, Message, Parent, Thread;`
+	var finalPosts []models.Post
+	for _, post := range posts {
+		row := r.Conn.QueryRow(ctx, insertPost, post.Author, post.Created, forum, post.IsEdited, post.Message, post.Parent, thread)
+		finalPost := models.Post{}
+		err := row.Scan(&finalPost.ID, &finalPost.Author, &finalPost.Created, &finalPost.Forum, &finalPost.IsEdited, &finalPost.Message, &finalPost.Parent, &finalPost.Thread)
+
+		if err != nil {
+			if pqError, ok := err.(*pgconn.PgError); ok {
+				switch pqError.Code {
+				case "23503": // foreign key violation
+					return posts, models.NotFound
+				default:
+					return posts, models.InternalError
+				}
+			}
+			return posts, models.InternalError
+		}
+		finalPosts = append(finalPosts, finalPost)
+	}
+	return finalPosts, nil
 }
