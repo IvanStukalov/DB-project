@@ -65,3 +65,42 @@ func (u *UseCase) CreateForum(ctx context.Context, forum models.Forum) (models.F
 func (u *UseCase) GetForum(ctx context.Context, forum models.Forum) (models.Forum, error) {
 	return u.repo.GetForum(ctx, forum.Slug)
 }
+
+func (u *UseCase) CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error) {
+	creator, err := u.repo.GetUser(ctx, thread.Author)
+	if err != nil {
+		return thread, models.NotFound
+	}
+	thread.Author = creator.NickName
+
+	foundForum, err := u.repo.GetForum(ctx, thread.Forum)
+	if err != nil {
+		return thread, models.NotFound
+	}
+	thread.Forum = foundForum.Slug
+
+	if thread.Slug != "" {
+		foundThread, err := u.repo.GetThread(ctx, thread.Slug)
+		if err == nil {
+			return foundThread, models.Conflict
+		}
+	}
+
+	createdThread, err := u.repo.CreateThread(ctx, thread)
+	if err != nil {
+		return createdThread, err
+	}
+	return createdThread, nil
+}
+
+func (u *UseCase) GetThread(ctx context.Context, slugOrId string) (models.Thread, error) {
+	return u.repo.GetThread(ctx, slugOrId)
+}
+
+func (u *UseCase) GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error) {
+	_, err := u.repo.GetForum(ctx, slug)
+	if err != nil {
+		return nil, models.NotFound
+	}
+	return u.repo.GetThreadByForumSlug(ctx, slug, limit, since, desc)
+}

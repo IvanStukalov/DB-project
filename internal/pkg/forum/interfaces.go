@@ -11,6 +11,9 @@ type UseCase interface {
 	UpdateUser(ctx context.Context, user models.User) ([]models.User, error)
 	CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	GetForum(ctx context.Context, forum models.Forum) (models.Forum, error)
+	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
+	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
+	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
 }
 
 type Repository interface {
@@ -21,4 +24,7 @@ type Repository interface {
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 	CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	GetForum(ctx context.Context, slug string) (models.Forum, error)
+	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
+	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
+	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
 }

@@ -37,6 +37,10 @@ func main() {
 
 		forum.HandleFunc("/forum/create", fHandler.CreateForum).Methods(http.MethodPost)
 		forum.HandleFunc("/forum/{slug}/details", fHandler.GetForum).Methods(http.MethodGet)
+		forum.HandleFunc("/forum/{slug}/threads", fHandler.GetForumThreads).Methods(http.MethodGet)
+		forum.HandleFunc("/forum/{slug}/create", fHandler.CreateThread).Methods(http.MethodPost)
+
+		forum.HandleFunc("/thread/{slug_or_id}/details", fHandler.GetThread).Methods(http.MethodGet)
 	}
 
 	http.Handle("/", muxRoute)

@@ -139,3 +139,80 @@ func (h *Handler) GetForum(w http.ResponseWriter, r *http.Request) {
 	utils.Response(w, http.StatusOK, finalForum)
 	return
 }
+
+func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	forumParam, found := vars["slug"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+		return
+	}
+
+	newThread := models.Thread{}
+	err := easyjson.UnmarshalFromReader(r.Body, &newThread)
+	if err != nil {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+	newThread.Forum = forumParam
+
+	finalThread, err := h.uc.CreateThread(r.Context(), newThread)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "error"})
+		return
+	}
+	if err == models.Conflict {
+		utils.Response(w, http.StatusConflict, finalThread)
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+
+	utils.Response(w, http.StatusCreated, finalThread)
+	return
+}
+
+func (h *Handler) GetThread(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slug, found := vars["slug_or_id"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug or id"})
+		return
+	}
+
+	finalThread, err := h.uc.GetThread(r.Context(), slug)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "can`t find thread " + slug})
+		return
+	}
+	utils.Response(w, http.StatusOK, finalThread)
+	return
+}
+
+func (h *Handler) GetForumThreads(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slug, found := vars["slug"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+		return
+	}
+
+	queryParams := r.URL.Query()
+	limit := queryParams.Get("limit")
+	desc := queryParams.Get("desc")
+	since := queryParams.Get("since")
+
+	finalThreads, err := h.uc.GetThreadByForumSlug(r.Context(), slug, limit, since, desc)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "can`t find threads " + slug})
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+	utils.Response(w, http.StatusOK, finalThreads)
+	return
+}
