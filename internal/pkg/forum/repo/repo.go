@@ -82,7 +82,18 @@ func (r *repoPostgres) CreateForum(ctx context.Context, forum models.Forum) (mod
 	const createForum = `INSERT INTO forum (Title, "user", Slug, Posts, Threads) VALUES ($1, $2, $3, $4, $5);`
 	_, err := r.Conn.Exec(ctx, createForum, forum.Title, forum.User, forum.Slug, forum.Posts, forum.Threads)
 	if err != nil {
-		return models.Forum{}, models.InternalError
+		return forum, models.InternalError
 	}
 	return forum, nil
+}
+
+func (r *repoPostgres) GetForum(ctx context.Context, slug string) (models.Forum, error) {
+	const selectForumBySlug = `SELECT Title, "user", Slug, Posts, Threads FROM forum WHERE $1 = slug;`
+	row := r.Conn.QueryRow(ctx, selectForumBySlug, slug)
+	finalForum := models.Forum{}
+	err := row.Scan(&finalForum.Title, &finalForum.User, &finalForum.Slug, &finalForum.Posts, &finalForum.Threads)
+	if err != nil {
+		return models.Forum{}, models.NotFound
+	}
+	return finalForum, nil
 }

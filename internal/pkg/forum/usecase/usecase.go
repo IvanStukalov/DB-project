@@ -45,14 +45,23 @@ func (u *UseCase) UpdateUser(ctx context.Context, user models.User) ([]models.Us
 }
 
 func (u *UseCase) CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error) {
-	_, err := u.repo.GetUser(ctx, forum.User)
+	creator, err := u.repo.GetUser(ctx, forum.User)
 	if err != nil {
 		return forum, models.NotFound
 	}
+	forum.User = creator.NickName
 
 	createdForum, err := u.repo.CreateForum(ctx, forum)
 	if err != nil {
-		return createdForum, models.Conflict
+		foundForum, foundError := u.repo.GetForum(ctx, forum.Slug)
+		if foundError == nil {
+			return foundForum, models.Conflict
+		}
+		return createdForum, models.InternalError
 	}
 	return createdForum, nil
+}
+
+func (u *UseCase) GetForum(ctx context.Context, forum models.Forum) (models.Forum, error) {
+	return u.repo.GetForum(ctx, forum.Slug)
 }

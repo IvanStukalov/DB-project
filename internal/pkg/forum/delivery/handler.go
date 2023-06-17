@@ -94,25 +94,9 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
-	//vars := mux.Vars(r)
-	//_, found := vars["title"]
-	//if !found {
-	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid title"})
-	//	return
-	//}
-	//_, found = vars["user"]
-	//if !found {
-	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid user"})
-	//	return
-	//}
-	//_, found = vars["slug"]
-	//if !found {
-	//	utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
-	//	return
-	//}
-
 	newForum := models.Forum{}
 	err := easyjson.UnmarshalFromReader(r.Body, &newForum)
+
 	if err != nil {
 		utils.Response(w, http.StatusInternalServerError, nil)
 		return
@@ -124,10 +108,34 @@ func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err == models.Conflict {
-		utils.Response(w, http.StatusConflict, models.ErrMsg{Msg: "error"})
+		utils.Response(w, http.StatusConflict, finalForum)
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
 		return
 	}
 
 	utils.Response(w, http.StatusCreated, finalForum)
+	return
+}
+
+func (h *Handler) GetForum(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slug, found := vars["slug"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+		return
+	}
+
+	newForum := models.Forum{}
+	newForum.Slug = slug
+
+	finalForum, err := h.uc.GetForum(r.Context(), newForum)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "can`t find forum " + slug})
+		return
+	}
+	utils.Response(w, http.StatusOK, finalForum)
 	return
 }
