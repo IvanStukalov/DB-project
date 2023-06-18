@@ -13,6 +13,10 @@ type Handler struct {
 	uc user.UseCase
 }
 
+func NewUserHandler(UserUseCase user.UseCase) *Handler {
+	return &Handler{uc: UserUseCase}
+}
+
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	nickname, found := vars["nickname"]

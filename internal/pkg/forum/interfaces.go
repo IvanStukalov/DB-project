@@ -9,22 +9,12 @@ type UseCase interface {
 	CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	GetForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
-	UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error)
-	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
-	CreatePosts(ctx context.Context, slugOrId string, posts []models.Post) ([]models.Post, error)
-	CreateVote(ctx context.Context, slugOrId string, vote models.Vote) (models.Thread, error)
 }
 
 type Repository interface {
 	CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	GetForum(ctx context.Context, slug string) (models.Forum, error)
-	GetForumByThread(ctx context.Context, id int) (string, error)
 	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
-	UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error)
-	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
-	CreatePosts(ctx context.Context, thread int, forum string, posts []models.Post) ([]models.Post, error)
-	CreateVote(ctx context.Context, thread int, vote models.Vote) error
-	ChangeVote(ctx context.Context, thread int, vote models.Vote) error
 }

@@ -5,6 +5,9 @@ import (
 	forumDelivery "github.com/IvanStukalov/DB_project/internal/pkg/forum/delivery"
 	forumRepo "github.com/IvanStukalov/DB_project/internal/pkg/forum/repo"
 	forumUsecase "github.com/IvanStukalov/DB_project/internal/pkg/forum/usecase"
+	threadDelivery "github.com/IvanStukalov/DB_project/internal/pkg/thread/delivery"
+	threadRepo "github.com/IvanStukalov/DB_project/internal/pkg/thread/repo"
+	threadUsecase "github.com/IvanStukalov/DB_project/internal/pkg/thread/usecase"
 	userDelivery "github.com/IvanStukalov/DB_project/internal/pkg/user/delivery"
 	userRepo "github.com/IvanStukalov/DB_project/internal/pkg/user/repo"
 	userUsecase "github.com/IvanStukalov/DB_project/internal/pkg/user/usecase"
@@ -30,10 +33,14 @@ func main() {
 
 	uRepo := userRepo.NewRepoPostgres(pool)
 	uUsecase := userUsecase.NewRepoUsecase(uRepo)
-	uHandler := userDelivery.NewForumHandler(uUsecase)
+	uHandler := userDelivery.NewUserHandler(uUsecase)
+
+	tRepo := threadRepo.NewRepoPostgres(pool)
+	tUsecase := threadUsecase.NewRepoUsecase(tRepo)
+	tHandler := threadDelivery.NewThreadHandler(tUsecase)
 
 	fRepo := forumRepo.NewRepoPostgres(pool)
-	fUsecase := forumUsecase.NewRepoUsecase(fRepo)
+	fUsecase := forumUsecase.NewRepoUsecase(fRepo, uRepo, tRepo)
 	fHandler := forumDelivery.NewForumHandler(fUsecase)
 
 	forum := muxRoute.PathPrefix("/api").Subrouter()
@@ -47,10 +54,10 @@ func main() {
 		forum.HandleFunc("/forum/{slug}/threads", fHandler.GetForumThreads).Methods(http.MethodGet)
 		forum.HandleFunc("/forum/{slug}/create", fHandler.CreateThread).Methods(http.MethodPost)
 
-		forum.HandleFunc("/thread/{slug_or_id}/details", fHandler.GetThread).Methods(http.MethodGet)
-		forum.HandleFunc("/thread/{slug_or_id}/details", fHandler.UpdateThread).Methods(http.MethodPost)
-		forum.HandleFunc("/thread/{slug_or_id}/create", fHandler.CreatePosts).Methods(http.MethodPost)
-		forum.HandleFunc("/thread/{slug_or_id}/vote", fHandler.CreateVote).Methods(http.MethodPost)
+		forum.HandleFunc("/thread/{slug_or_id}/details", tHandler.GetThread).Methods(http.MethodGet)
+		forum.HandleFunc("/thread/{slug_or_id}/details", tHandler.UpdateThread).Methods(http.MethodPost)
+		forum.HandleFunc("/thread/{slug_or_id}/create", tHandler.CreatePosts).Methods(http.MethodPost)
+		forum.HandleFunc("/thread/{slug_or_id}/vote", tHandler.CreateVote).Methods(http.MethodPost)
 	}
 
 	http.Handle("/", muxRoute)
