@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 	"github.com/jackc/pgconn"
@@ -21,7 +20,7 @@ func NewRepoPostgres(Conn *pgxpool.Pool) forum.Repository {
 
 func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, error) {
 	var userM models.User
-	const SelectUserByNickname = "SELECT nickname, fullname, about, email FROM users WHERE nickname=$1 LIMIT 1;"
+	const SelectUserByNickname = `SELECT nickname, fullname, about, email FROM users WHERE nickname=$1 LIMIT 1;`
 	row := r.Conn.QueryRow(ctx, SelectUserByNickname, name)
 	err := row.Scan(&userM.NickName, &userM.FullName, &userM.About, &userM.Email)
 	if err != nil {
@@ -72,7 +71,7 @@ func (r *repoPostgres) CreateUser(ctx context.Context, user models.User) (models
 }
 
 func (r *repoPostgres) UpdateUser(ctx context.Context, user models.User) (models.User, error) {
-	const updateUser = "UPDATE users SET FullName=coalesce(nullif($2, ''), FullName), About=coalesce(nullif($3, ''), About), Email=coalesce(nullif($4, ''), Email) WHERE Nickname=$1 RETURNING *"
+	const updateUser = "UPDATE users SET FullName=coalesce(nullif($2, ''), FullName), About=coalesce(nullif($3, ''), About), Email=coalesce(nullif($4, ''), Email) WHERE Nickname=$1 RETURNING *;"
 	row := r.Conn.QueryRow(ctx, updateUser, user.NickName, user.FullName, user.About, user.Email)
 	updatedUser := models.User{}
 	err := row.Scan(&updatedUser.NickName, &updatedUser.FullName, &updatedUser.About, &updatedUser.Email)
@@ -123,6 +122,24 @@ func (r *repoPostgres) CreateThread(ctx context.Context, thread models.Thread) (
 	}
 	thread.ID = newThread.ID
 	return thread, nil
+}
+
+func (r *repoPostgres) UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error) {
+	var row pgx.Row
+	if id, err := strconv.Atoi(slugOrId); err == nil {
+		const updateThread = `UPDATE threads SET Title=coalesce(nullif($1, ''), Title), Author=coalesce(nullif($2, ''), Author), Forum=coalesce(nullif($3, ''), Forum), Message=coalesce(nullif($4, ''), Message), Votes=coalesce(nullif($5, 0), Votes), Created=coalesce(nullif($6, make_timestamp(1, 1, 1, 0, 0, 0)), Created) WHERE Id = $7 RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
+		row = r.Conn.QueryRow(ctx, updateThread, thread.Title, thread.Author, thread.Forum, thread.Message, thread.Votes, thread.Created, id)
+	} else {
+		const updateThread = `UPDATE threads SET Title=coalesce(nullif($1, ''), Title), Author=coalesce(nullif($2, ''), Author), Forum=coalesce(nullif($3, ''), Forum), Message=coalesce(nullif($4, ''), Message), Votes=coalesce(nullif($5, 0), Votes), Created=coalesce(nullif($6, make_timestamp(1, 1, 1, 0, 0, 0)), Created) WHERE Slug = $7 RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
+		row = r.Conn.QueryRow(ctx, updateThread, thread.Title, thread.Author, thread.Forum, thread.Message, thread.Votes, thread.Created, slugOrId)
+	}
+
+	newThread := models.Thread{}
+	err := row.Scan(&newThread.ID, &newThread.Title, &newThread.Author, &newThread.Forum, &newThread.Message, &newThread.Slug, &newThread.Created)
+	if err != nil {
+		return thread, models.InternalError
+	}
+	return newThread, nil
 }
 
 func (r *repoPostgres) GetThread(ctx context.Context, slugOrId string) (models.Thread, error) {
@@ -276,7 +293,6 @@ func (r *repoPostgres) ChangeVote(ctx context.Context, thread int, vote models.V
 	const updateVote = `UPDATE votes SET Voice = $1 WHERE Author = $2 AND Thread = $3;`
 	_, err = r.Conn.Exec(ctx, updateVote, vote.Voice, vote.Nickname, thread)
 	if err != nil {
-		fmt.Println("repo update:  ", err.Error())
 		return models.InternalError
 	}
 	return nil

@@ -4,6 +4,7 @@ package models
 
 import (
 	json "encoding/json"
+	pgtype "github.com/jackc/pgtype"
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -54,6 +55,8 @@ func easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(in *jlex
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.Created).UnmarshalJSON(data))
 			}
+		case "path":
+			easyjson5a72dc82DecodeGithubComJackcPgtype(in, &out.Path)
 		default:
 			in.SkipRecursive()
 		}
@@ -108,6 +111,11 @@ func easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(out *jwr
 		out.RawString(prefix)
 		out.Raw((in.Created).MarshalJSON())
 	}
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix)
+		easyjson5a72dc82EncodeGithubComJackcPgtype(out, in.Path)
+	}
 	out.RawByte('}')
 }
 
@@ -133,4 +141,175 @@ func (v *Post) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Post) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(l, v)
+}
+func easyjson5a72dc82DecodeGithubComJackcPgtype(in *jlexer.Lexer, out *pgtype.Int8Array) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Elements":
+			if in.IsNull() {
+				in.Skip()
+				out.Elements = nil
+			} else {
+				in.Delim('[')
+				if out.Elements == nil {
+					if !in.IsDelim(']') {
+						out.Elements = make([]pgtype.Int8, 0, 4)
+					} else {
+						out.Elements = []pgtype.Int8{}
+					}
+				} else {
+					out.Elements = (out.Elements)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 pgtype.Int8
+					if data := in.Raw(); in.Ok() {
+						in.AddError((v1).UnmarshalJSON(data))
+					}
+					out.Elements = append(out.Elements, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "Dimensions":
+			if in.IsNull() {
+				in.Skip()
+				out.Dimensions = nil
+			} else {
+				in.Delim('[')
+				if out.Dimensions == nil {
+					if !in.IsDelim(']') {
+						out.Dimensions = make([]pgtype.ArrayDimension, 0, 8)
+					} else {
+						out.Dimensions = []pgtype.ArrayDimension{}
+					}
+				} else {
+					out.Dimensions = (out.Dimensions)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v2 pgtype.ArrayDimension
+					easyjson5a72dc82DecodeGithubComJackcPgtype1(in, &v2)
+					out.Dimensions = append(out.Dimensions, v2)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "Status":
+			out.Status = pgtype.Status(in.Uint8())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5a72dc82EncodeGithubComJackcPgtype(out *jwriter.Writer, in pgtype.Int8Array) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Elements\":"
+		out.RawString(prefix[1:])
+		if in.Elements == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v3, v4 := range in.Elements {
+				if v3 > 0 {
+					out.RawByte(',')
+				}
+				out.Raw((v4).MarshalJSON())
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"Dimensions\":"
+		out.RawString(prefix)
+		if in.Dimensions == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v5, v6 := range in.Dimensions {
+				if v5 > 0 {
+					out.RawByte(',')
+				}
+				easyjson5a72dc82EncodeGithubComJackcPgtype1(out, v6)
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"Status\":"
+		out.RawString(prefix)
+		out.Uint8(uint8(in.Status))
+	}
+	out.RawByte('}')
+}
+func easyjson5a72dc82DecodeGithubComJackcPgtype1(in *jlexer.Lexer, out *pgtype.ArrayDimension) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Length":
+			out.Length = int32(in.Int32())
+		case "LowerBound":
+			out.LowerBound = int32(in.Int32())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5a72dc82EncodeGithubComJackcPgtype1(out *jwriter.Writer, in pgtype.ArrayDimension) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Length\":"
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.Length))
+	}
+	{
+		const prefix string = ",\"LowerBound\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.LowerBound))
+	}
+	out.RawByte('}')
 }

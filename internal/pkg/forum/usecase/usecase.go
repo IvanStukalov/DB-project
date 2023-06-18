@@ -93,6 +93,26 @@ func (u *UseCase) CreateThread(ctx context.Context, thread models.Thread) (model
 	return createdThread, nil
 }
 
+func (u *UseCase) UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error) {
+	//creator, err := u.repo.GetUser(ctx, thread.Author)
+	//if err != nil {
+	//	return thread, models.NotFound
+	//}
+	//thread.Author = creator.NickName
+	//
+	//foundForum, err := u.repo.GetForum(ctx, thread.Forum)
+	//if err != nil {
+	//	return thread, models.NotFound
+	//}
+	//thread.Forum = foundForum.Slug
+
+	updatedThread, err := u.repo.UpdateThread(ctx, slugOrId, thread)
+	if err != nil {
+		return updatedThread, err
+	}
+	return updatedThread, nil
+}
+
 func (u *UseCase) GetThread(ctx context.Context, slugOrId string) (models.Thread, error) {
 	return u.repo.GetThread(ctx, slugOrId)
 }
