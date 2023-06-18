@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 	"github.com/IvanStukalov/DB_project/internal/utils"
@@ -254,5 +255,39 @@ func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.Response(w, http.StatusCreated, finalPosts)
+	return
+}
+
+func (h *Handler) CreateVote(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slugOrId, found := vars["slug_or_id"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+		return
+	}
+
+	newVote := models.Vote{}
+	err := easyjson.UnmarshalFromReader(r.Body, &newVote)
+	if err != nil {
+		fmt.Println("handler: ", err.Error())
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+
+	finalThread, err := h.uc.CreateVote(r.Context(), slugOrId, newVote)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "error"})
+		return
+	}
+	if err == models.Conflict {
+		utils.Response(w, http.StatusConflict, finalThread)
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+
+	utils.Response(w, http.StatusOK, finalThread)
 	return
 }

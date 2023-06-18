@@ -66,3 +66,63 @@ CREATE UNLOGGED TABLE users_forum
     FOREIGN KEY (Slug) REFERENCES "forum" (Slug),
     UNIQUE (Nickname, Slug)
 );
+
+
+CREATE OR REPLACE FUNCTION addThread() RETURNS TRIGGER AS
+$update_forum$
+BEGIN
+    UPDATE forum SET Threads=(Threads+1) WHERE Slug = NEW.Forum;
+    return NEW;
+END
+$update_forum$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_insert_thread
+    AFTER INSERT
+    ON threads
+    FOR EACH ROW
+    EXECUTE PROCEDURE addThread();
+
+
+CREATE OR REPLACE FUNCTION addPost() RETURNS TRIGGER AS
+$update_forum$
+BEGIN
+    UPDATE forum SET Posts=(Posts+1) WHERE Slug = NEW.Forum;
+    return NEW;
+END
+$update_forum$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_insert_post
+    AFTER INSERT
+    ON posts
+    FOR EACH ROW
+    EXECUTE PROCEDURE addPost();
+
+
+CREATE OR REPLACE FUNCTION addVote() RETURNS TRIGGER AS
+$update_forum$
+BEGIN
+    UPDATE threads SET Votes=(Votes+New.Voice) WHERE Id = NEW.Thread;
+    return NEW;
+END
+$update_forum$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_insert_vote
+    AFTER INSERT
+    ON votes
+    FOR EACH ROW
+    EXECUTE PROCEDURE addVote();
+
+
+CREATE OR REPLACE FUNCTION changeVote() RETURNS TRIGGER AS
+$update_forum$
+BEGIN
+UPDATE threads SET Votes=(Votes+2*New.Voice) WHERE Id = NEW.Thread;
+return NEW;
+END
+$update_forum$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_update_vote
+    AFTER UPDATE
+    ON votes
+    FOR EACH ROW
+    EXECUTE PROCEDURE changeVote();

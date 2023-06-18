@@ -15,6 +15,7 @@ type UseCase interface {
 	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
 	CreatePosts(ctx context.Context, slugOrId string, posts []models.Post) ([]models.Post, error)
+	CreateVote(ctx context.Context, slugOrId string, vote models.Vote) (models.Thread, error)
 }
 
 type Repository interface {
@@ -30,4 +31,6 @@ type Repository interface {
 	GetThread(ctx context.Context, slugOrId string) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
 	CreatePosts(ctx context.Context, thread int, forum string, posts []models.Post) ([]models.Post, error)
+	CreateVote(ctx context.Context, thread int, vote models.Vote) error
+	ChangeVote(ctx context.Context, thread int, vote models.Vote) error
 }

@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 	"github.com/jackc/pgconn"
@@ -117,10 +118,10 @@ func (r *repoPostgres) CreateThread(ctx context.Context, thread models.Thread) (
 	row := r.Conn.QueryRow(ctx, createThread, thread.Title, thread.Author, thread.Forum, thread.Message, thread.Votes, thread.Slug, thread.Created)
 	newThread := models.Thread{}
 	err := row.Scan(&newThread.ID)
-	thread.ID = newThread.ID
 	if err != nil {
 		return thread, models.InternalError
 	}
+	thread.ID = newThread.ID
 	return thread, nil
 }
 
@@ -241,4 +242,42 @@ func (r *repoPostgres) CreatePosts(ctx context.Context, thread int, forum string
 		finalPosts = append(finalPosts, finalPost)
 	}
 	return finalPosts, nil
+}
+
+func (r *repoPostgres) CreateVote(ctx context.Context, thread int, vote models.Vote) error {
+	const insertVote = `INSERT INTO votes (Author, Voice, Thread) VALUES ($1, $2, $3);`
+	_, err := r.Conn.Exec(ctx, insertVote, vote.Nickname, vote.Voice, thread)
+	if err != nil {
+		if pqError, ok := err.(*pgconn.PgError); ok {
+			switch pqError.Code {
+			case "23505": // unique violation
+				return models.Conflict
+			default:
+				return models.InternalError
+			}
+		}
+	}
+	return nil
+}
+
+func (r *repoPostgres) ChangeVote(ctx context.Context, thread int, vote models.Vote) error {
+	const selectVote = `SELECT Voice FROM votes WHERE Author = $1 AND Thread = $2;`
+	row := r.Conn.QueryRow(ctx, selectVote, vote.Nickname, thread)
+	var voice int
+	err := row.Scan(&voice)
+	if err != nil {
+		return models.InternalError
+	}
+
+	if voice == vote.Voice {
+		return nil
+	}
+
+	const updateVote = `UPDATE votes SET Voice = $1 WHERE Author = $2 AND Thread = $3;`
+	_, err = r.Conn.Exec(ctx, updateVote, vote.Voice, vote.Nickname, thread)
+	if err != nil {
+		fmt.Println("repo update:  ", err.Error())
+		return models.InternalError
+	}
+	return nil
 }
