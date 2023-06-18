@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
+	userRepo "github.com/IvanStukalov/DB_project/internal/pkg/user/repo"
 )
 
 type UseCase struct {
@@ -14,38 +15,8 @@ func NewRepoUsecase(repo forum.Repository) forum.UseCase {
 	return &UseCase{repo: repo}
 }
 
-func (u *UseCase) GetUser(ctx context.Context, user models.User) (models.User, error) {
-	return u.repo.GetUser(ctx, user.NickName)
-}
-
-func (u *UseCase) CreateUser(ctx context.Context, user models.User) ([]models.User, error) {
-	chUsers, _ := u.repo.CheckUserEmailOrNicknameUniq(user)
-	if len(chUsers) > 0 {
-		return chUsers, models.Conflict
-	}
-	usersS := make([]models.User, 0)
-	cUser, _ := u.repo.CreateUser(ctx, user)
-	usersS = append(usersS, cUser)
-	return usersS, nil
-}
-
-func (u *UseCase) UpdateUser(ctx context.Context, user models.User) ([]models.User, error) {
-	chUsers, err := u.repo.CheckUserEmailUniq(user)
-	if err == models.Conflict {
-		return chUsers, models.Conflict
-	}
-
-	usersS := make([]models.User, 0)
-	updatedUser, err := u.repo.UpdateUser(ctx, user)
-	usersS = append(usersS, updatedUser)
-	if err != nil {
-		return nil, models.NotFound
-	}
-	return usersS, nil
-}
-
 func (u *UseCase) CreateForum(ctx context.Context, forum models.Forum) (models.Forum, error) {
-	creator, err := u.repo.GetUser(ctx, forum.User)
+	creator, err := userRepo.GetUser(ctx, forum.User)
 	if err != nil {
 		return forum, models.NotFound
 	}
@@ -94,18 +65,6 @@ func (u *UseCase) CreateThread(ctx context.Context, thread models.Thread) (model
 }
 
 func (u *UseCase) UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error) {
-	//creator, err := u.repo.GetUser(ctx, thread.Author)
-	//if err != nil {
-	//	return thread, models.NotFound
-	//}
-	//thread.Author = creator.NickName
-	//
-	//foundForum, err := u.repo.GetForum(ctx, thread.Forum)
-	//if err != nil {
-	//	return thread, models.NotFound
-	//}
-	//thread.Forum = foundForum.Slug
-
 	updatedThread, err := u.repo.UpdateThread(ctx, slugOrId, thread)
 	if err != nil {
 		return updatedThread, err

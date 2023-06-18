@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
-	delivery "github.com/IvanStukalov/DB_project/internal/pkg/forum/delivery"
-	"github.com/IvanStukalov/DB_project/internal/pkg/forum/repo"
-	"github.com/IvanStukalov/DB_project/internal/pkg/forum/usecase"
+	forumDelivery "github.com/IvanStukalov/DB_project/internal/pkg/forum/delivery"
+	forumRepo "github.com/IvanStukalov/DB_project/internal/pkg/forum/repo"
+	forumUsecase "github.com/IvanStukalov/DB_project/internal/pkg/forum/usecase"
+	userDelivery "github.com/IvanStukalov/DB_project/internal/pkg/user/delivery"
+	userRepo "github.com/IvanStukalov/DB_project/internal/pkg/user/repo"
+	userUsecase "github.com/IvanStukalov/DB_project/internal/pkg/user/usecase"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
@@ -25,15 +28,19 @@ func main() {
 		log.Fatal("No connection to postgres", err)
 	}
 
-	fRepo := repo.NewRepoPostgres(pool)
-	fUsecase := usecase.NewRepoUsecase(fRepo)
-	fHandler := delivery.NewForumHandler(fUsecase)
+	uRepo := userRepo.NewRepoPostgres(pool)
+	uUsecase := userUsecase.NewRepoUsecase(uRepo)
+	uHandler := userDelivery.NewForumHandler(uUsecase)
+
+	fRepo := forumRepo.NewRepoPostgres(pool)
+	fUsecase := forumUsecase.NewRepoUsecase(fRepo)
+	fHandler := forumDelivery.NewForumHandler(fUsecase)
 
 	forum := muxRoute.PathPrefix("/api").Subrouter()
 	{
-		forum.HandleFunc("/user/{nickname}/create", fHandler.CreateUser).Methods(http.MethodPost)
-		forum.HandleFunc("/user/{nickname}/profile", fHandler.GetUser).Methods(http.MethodGet)
-		forum.HandleFunc("/user/{nickname}/profile", fHandler.UpdateUser).Methods(http.MethodPost)
+		forum.HandleFunc("/user/{nickname}/create", uHandler.CreateUser).Methods(http.MethodPost)
+		forum.HandleFunc("/user/{nickname}/profile", uHandler.GetUser).Methods(http.MethodGet)
+		forum.HandleFunc("/user/{nickname}/profile", uHandler.UpdateUser).Methods(http.MethodPost)
 
 		forum.HandleFunc("/forum/create", fHandler.CreateForum).Methods(http.MethodPost)
 		forum.HandleFunc("/forum/{slug}/details", fHandler.GetForum).Methods(http.MethodGet)
