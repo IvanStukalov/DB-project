@@ -5,6 +5,9 @@ import (
 	forumDelivery "github.com/IvanStukalov/DB_project/internal/pkg/forum/delivery"
 	forumRepo "github.com/IvanStukalov/DB_project/internal/pkg/forum/repo"
 	forumUsecase "github.com/IvanStukalov/DB_project/internal/pkg/forum/usecase"
+	postDelivery "github.com/IvanStukalov/DB_project/internal/pkg/post/delivery"
+	postRepo "github.com/IvanStukalov/DB_project/internal/pkg/post/repo"
+	postUsecase "github.com/IvanStukalov/DB_project/internal/pkg/post/usecase"
 	threadDelivery "github.com/IvanStukalov/DB_project/internal/pkg/thread/delivery"
 	threadRepo "github.com/IvanStukalov/DB_project/internal/pkg/thread/repo"
 	threadUsecase "github.com/IvanStukalov/DB_project/internal/pkg/thread/usecase"
@@ -43,6 +46,10 @@ func main() {
 	fUsecase := forumUsecase.NewRepoUsecase(fRepo, uRepo, tRepo)
 	fHandler := forumDelivery.NewForumHandler(fUsecase)
 
+	pRepo := postRepo.NewRepoPostgres(pool)
+	pUsecase := postUsecase.NewRepoUsecase(pRepo)
+	pHandler := postDelivery.NewPostHandler(pUsecase)
+
 	forum := muxRoute.PathPrefix("/api").Subrouter()
 	{
 		forum.HandleFunc("/user/{nickname}/create", uHandler.CreateUser).Methods(http.MethodPost)
@@ -53,12 +60,15 @@ func main() {
 		forum.HandleFunc("/forum/{slug}/details", fHandler.GetForum).Methods(http.MethodGet)
 		forum.HandleFunc("/forum/{slug}/threads", fHandler.GetForumThreads).Methods(http.MethodGet)
 		forum.HandleFunc("/forum/{slug}/create", fHandler.CreateThread).Methods(http.MethodPost)
+		forum.HandleFunc("/forum/{slug}/users", fHandler.GetUsers).Methods(http.MethodGet)
 
 		forum.HandleFunc("/thread/{slug_or_id}/details", tHandler.GetThread).Methods(http.MethodGet)
 		forum.HandleFunc("/thread/{slug_or_id}/details", tHandler.UpdateThread).Methods(http.MethodPost)
 		forum.HandleFunc("/thread/{slug_or_id}/create", tHandler.CreatePosts).Methods(http.MethodPost)
 		forum.HandleFunc("/thread/{slug_or_id}/vote", tHandler.CreateVote).Methods(http.MethodPost)
 		forum.HandleFunc("/thread/{slug_or_id}/posts", tHandler.GetPosts).Methods(http.MethodGet)
+
+		forum.HandleFunc("/post/{id}/details", pHandler.UpdatePost).Methods(http.MethodPost)
 	}
 
 	http.Handle("/", muxRoute)

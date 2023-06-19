@@ -225,8 +225,9 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 
 	if limit == "" {
 		if since != "" && desc == "true" {
-			selectPosts += ` WHERE posts.Thread = $1 AND posts.Id < $2 
-										 	 ORDER BY posts.Path DESC, posts.Id DESC`
+			selectPosts += ` JOIN posts parent ON parent.id = $2 
+											 WHERE posts.path < parent.path AND posts.thread = $1 
+											 ORDER BY posts.path DESC, posts.id DESC`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since)
 		}
 		if since == "" && desc == "true" {
@@ -235,8 +236,9 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread)
 		}
 		if since != "" && desc != "true" {
-			selectPosts += ` WHERE posts.Thread = $1 AND posts.Id > $2 
-										   ORDER BY posts.Path ASC, posts.Id ASC`
+			selectPosts += ` JOIN posts parent ON parent.id = $2 
+											 WHERE posts.path > parent.path AND posts.thread = $1 
+											 ORDER BY posts.path ASC, posts.id ASC`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since)
 		}
 		if since == "" && desc != "true" {
@@ -246,8 +248,9 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 		}
 	} else {
 		if since != "" && desc == "true" {
-			selectPosts += ` WHERE posts.Thread = $1 AND posts.Id < $2 
-										   ORDER BY posts.Path DESC, posts.Id DESC LIMIT $3`
+			selectPosts += ` JOIN posts parent ON parent.id = $2 
+											 WHERE posts.path < parent.path AND posts.thread = $1 
+											 ORDER BY posts.path DESC, posts.id DESC LIMIT $3`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since, limit)
 		}
 		if since == "" && desc == "true" {
@@ -256,8 +259,9 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, limit)
 		}
 		if since != "" && desc != "true" {
-			selectPosts += ` WHERE posts.Thread = $1 AND posts.Id > $2 AND posts.Path > 
-										   ORDER BY posts.Path ASC, posts.Id ASC LIMIT $3`
+			selectPosts += ` JOIN posts parent ON parent.id = $2 
+											 WHERE posts.path > parent.path AND posts.thread = $1 
+											 ORDER BY posts.path ASC, posts.id ASC LIMIT $3`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since, limit)
 		}
 		if since == "" && desc != "true" {
@@ -267,7 +271,6 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 		}
 	}
 	if errQuery != nil {
-		fmt.Println("query: ", errQuery.Error())
 		return []models.Post{}, models.InternalError
 	}
 	defer rows.Close()
@@ -278,7 +281,6 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 		err := rows.Scan(&postOne.ID, &postOne.Author, &postOne.Created, &postOne.Forum, &postOne.IsEdited, &postOne.Message, &postOne.Parent, &postOne.Thread, &postOne.Path)
 
 		if err != nil {
-			fmt.Println("scan: ", err.Error())
 			return []models.Post{}, models.InternalError
 		}
 		posts = append(posts, postOne)

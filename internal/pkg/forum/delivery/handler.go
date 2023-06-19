@@ -123,3 +123,29 @@ func (h *Handler) GetForumThreads(w http.ResponseWriter, r *http.Request) {
 	utils.Response(w, http.StatusOK, finalThreads)
 	return
 }
+
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slug, found := vars["slug"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug"})
+		return
+	}
+
+	queryParams := r.URL.Query()
+	limit := queryParams.Get("limit")
+	desc := queryParams.Get("desc")
+	since := queryParams.Get("since")
+
+	users, err := h.uc.GetUsers(r.Context(), slug, limit, since, desc)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "can`t find user from forum " + slug})
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+	utils.Response(w, http.StatusOK, users)
+	return
+}

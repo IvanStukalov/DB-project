@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 	"github.com/jackc/pgx/v4"
@@ -167,4 +168,66 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 		threads = append(threads, threadOne)
 	}
 	return threads, nil
+}
+
+func (r *repoPostgres) GetUsers(ctx context.Context, slug string, limit string, since string, desc string) ([]models.User, error) {
+	var rows pgx.Rows
+	var err error
+	selectUsers := `SELECT Nickname, Fullname, About, Email 
+									FROM users_forum 
+									WHERE Slug = $1`
+
+	if since != "" {
+		if limit != "" && desc != "true" {
+			selectUsers += ` AND Nickname > $2 ORDER BY Nickname ASC LIMIT $3`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, since, limit)
+		}
+		if limit == "" && desc != "true" {
+			selectUsers += ` AND Nickname > $2 ORDER BY Nickname ASC`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, since)
+		}
+		if limit != "" && desc == "true" {
+			selectUsers += ` AND Nickname < $2 ORDER BY Nickname DESC LIMIT $3`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, since, limit)
+		}
+		if limit == "" && desc == "true" {
+			selectUsers += ` AND Nickname > $2 ORDER BY Nickname DESC`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, since)
+		}
+	} else {
+		if limit != "" && desc != "true" {
+			selectUsers += ` ORDER BY Nickname ASC LIMIT $2`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, limit)
+		}
+		if limit == "" && desc != "true" {
+			selectUsers += ` ORDER BY Nickname ASC`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug)
+		}
+		if limit != "" && desc == "true" {
+			selectUsers += ` ORDER BY Nickname DESC LIMIT $2`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug, limit)
+		}
+		if limit == "" && desc == "true" {
+			selectUsers += ` ORDER BY Nickname DESC`
+			rows, err = r.Conn.Query(ctx, selectUsers, slug)
+		}
+	}
+
+	if err != nil {
+		fmt.Println("select: ", err.Error())
+		return []models.User{}, models.NotFound
+	}
+	defer rows.Close()
+	users := make([]models.User, 0)
+	for rows.Next() {
+		userOne := models.User{}
+		err = rows.Scan(&userOne.NickName, &userOne.FullName, &userOne.About, &userOne.Email)
+		if err != nil {
+			fmt.Println("scan: ", err.Error())
+			return []models.User{}, models.InternalError
+		}
+		users = append(users, userOne)
+	}
+
+	return users, nil
 }

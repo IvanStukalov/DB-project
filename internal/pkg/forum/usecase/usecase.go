@@ -74,3 +74,12 @@ func (u *UseCase) GetThreadByForumSlug(ctx context.Context, slug string, limit s
 	}
 	return u.repo.GetThreadByForumSlug(ctx, slug, limit, since, desc)
 }
+
+func (u *UseCase) GetUsers(ctx context.Context, slug string, limit string, since string, desc string) ([]models.User, error) {
+	_, err := u.repo.GetForum(ctx, slug)
+	if err == models.NotFound {
+		return []models.User{}, err
+	}
+
+	return u.repo.GetUsers(ctx, slug, limit, since, desc)
+}

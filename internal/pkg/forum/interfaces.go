@@ -10,6 +10,7 @@ type UseCase interface {
 	GetForum(ctx context.Context, forum models.Forum) (models.Forum, error)
 	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
+	GetUsers(ctx context.Context, slug string, limit string, since string, desc string) ([]models.User, error)
 }
 
 type Repository interface {
@@ -17,4 +18,5 @@ type Repository interface {
 	GetForum(ctx context.Context, slug string) (models.Forum, error)
 	CreateThread(ctx context.Context, thread models.Thread) (models.Thread, error)
 	GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error)
+	GetUsers(ctx context.Context, slug string, limit string, since string, desc string) ([]models.User, error)
 }

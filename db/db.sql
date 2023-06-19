@@ -134,3 +134,47 @@ CREATE TRIGGER on_update_vote
     ON votes
     FOR EACH ROW
     EXECUTE PROCEDURE changeVote();
+
+
+CREATE OR REPLACE FUNCTION UpdateUserOnPost() RETURNS TRIGGER AS
+$update_users_on_post$
+DECLARE
+    author_fullname CITEXT;
+    author_about    CITEXT;
+    author_email    CITEXT;
+BEGIN
+    SELECT Fullname, About, Email FROM users WHERE Nickname = NEW.Author INTO author_fullname, author_about, author_email;
+    INSERT INTO users_forum (Nickname, Fullname, About, Email, Slug)
+        VALUES (NEW.Author, author_fullname, author_about, author_email, NEW.Forum)
+        ON CONFLICT DO NOTHING;
+    return NEW;
+END
+$update_users_on_post$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_on_post
+    AFTER INSERT
+    ON posts
+    FOR EACH ROW
+    EXECUTE PROCEDURE UpdateUserOnPost();
+
+
+CREATE OR REPLACE FUNCTION UpdateUserForum() RETURNS TRIGGER AS
+$update_uf$
+DECLARE
+    author_fullname CITEXT;
+    author_about    CITEXT;
+    author_email    CITEXT;
+BEGIN
+    SELECT Fullname, About, Email FROM users WHERE Nickname = NEW.Author INTO author_fullname, author_about, author_email;
+    INSERT INTO users_forum (Nickname, Fullname, About, Email, Slug)
+        VALUES (NEW.Author, author_fullname, author_about, author_email, NEW.Forum)
+        ON CONFLICT DO NOTHING;
+    return NEW;
+END
+$update_uf$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_forum
+    AFTER INSERT
+    ON threads
+    FOR EACH ROW
+    EXECUTE PROCEDURE UpdateUserForum();
