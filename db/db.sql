@@ -85,14 +85,22 @@ CREATE TRIGGER on_insert_thread
 
 CREATE OR REPLACE FUNCTION addPost() RETURNS TRIGGER AS
 $update_forum$
+DECLARE
+    parent_path   INTEGER[];
 BEGIN
+    IF (NEW.parent = 0) THEN
+        NEW.path := array_append(NEW.path, NEW.id);
+    ELSE
+        SELECT path FROM posts WHERE id = NEW.parent INTO parent_path;
+        NEW.path := parent_path || NEW.id;
+    END IF;
     UPDATE forum SET Posts=(Posts+1) WHERE Slug = NEW.Forum;
     return NEW;
 END
 $update_forum$ LANGUAGE plpgsql;
 
 CREATE TRIGGER on_insert_post
-    AFTER INSERT
+    BEFORE INSERT
     ON posts
     FOR EACH ROW
     EXECUTE PROCEDURE addPost();

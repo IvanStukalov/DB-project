@@ -135,3 +135,30 @@ func (h *Handler) CreateVote(w http.ResponseWriter, r *http.Request) {
 	utils.Response(w, http.StatusOK, finalThread)
 	return
 }
+
+func (h *Handler) GetPosts(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	slug, found := vars["slug_or_id"]
+	if !found {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "invalid slug or id"})
+		return
+	}
+
+	queryParams := r.URL.Query()
+	limit := queryParams.Get("limit")
+	desc := queryParams.Get("desc")
+	since := queryParams.Get("since")
+	sort := queryParams.Get("sort")
+
+	finalPosts, err := h.uc.GetPosts(r.Context(), slug, sort, limit, since, desc)
+	if err == models.NotFound {
+		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "thread not found"})
+		return
+	}
+	if err == models.InternalError {
+		utils.Response(w, http.StatusInternalServerError, nil)
+		return
+	}
+	utils.Response(w, http.StatusOK, finalPosts)
+	return
+}

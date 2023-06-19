@@ -142,7 +142,7 @@ func (v *Post) UnmarshalJSON(data []byte) error {
 func (v *Post) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(l, v)
 }
-func easyjson5a72dc82DecodeGithubComJackcPgtype(in *jlexer.Lexer, out *pgtype.Int8Array) {
+func easyjson5a72dc82DecodeGithubComJackcPgtype(in *jlexer.Lexer, out *pgtype.Int4Array) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -169,15 +169,15 @@ func easyjson5a72dc82DecodeGithubComJackcPgtype(in *jlexer.Lexer, out *pgtype.In
 				in.Delim('[')
 				if out.Elements == nil {
 					if !in.IsDelim(']') {
-						out.Elements = make([]pgtype.Int8, 0, 4)
+						out.Elements = make([]pgtype.Int4, 0, 8)
 					} else {
-						out.Elements = []pgtype.Int8{}
+						out.Elements = []pgtype.Int4{}
 					}
 				} else {
 					out.Elements = (out.Elements)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v1 pgtype.Int8
+					var v1 pgtype.Int4
 					if data := in.Raw(); in.Ok() {
 						in.AddError((v1).UnmarshalJSON(data))
 					}
@@ -221,7 +221,7 @@ func easyjson5a72dc82DecodeGithubComJackcPgtype(in *jlexer.Lexer, out *pgtype.In
 		in.Consumed()
 	}
 }
-func easyjson5a72dc82EncodeGithubComJackcPgtype(out *jwriter.Writer, in pgtype.Int8Array) {
+func easyjson5a72dc82EncodeGithubComJackcPgtype(out *jwriter.Writer, in pgtype.Int4Array) {
 	out.RawByte('{')
 	first := true
 	_ = first

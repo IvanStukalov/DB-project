@@ -45,25 +45,43 @@ func (u *UseCase) CreatePosts(ctx context.Context, slugOrId string, posts []mode
 }
 
 func (u *UseCase) CreateVote(ctx context.Context, slugOrId string, vote models.Vote) (models.Thread, error) {
-	thread, err := u.repo.GetThread(ctx, slugOrId)
+	foundThread, err := u.repo.GetThread(ctx, slugOrId)
 	if err != nil {
 		return models.Thread{}, models.NotFound
 	}
 
-	err = u.repo.CreateVote(ctx, thread.ID, vote)
+	err = u.repo.CreateVote(ctx, foundThread.ID, vote)
 	if err == models.Conflict {
-		errUpdate := u.repo.ChangeVote(ctx, thread.ID, vote)
+		errUpdate := u.repo.ChangeVote(ctx, foundThread.ID, vote)
 		if errUpdate != nil {
-			return thread, models.InternalError
+			return foundThread, models.InternalError
 		}
 	}
 	if err == models.InternalError {
-		return thread, models.InternalError
+		return foundThread, models.InternalError
 	}
 
-	thread, err = u.repo.GetThread(ctx, slugOrId)
+	foundThread, err = u.repo.GetThread(ctx, slugOrId)
 	if err != nil {
-		return thread, models.NotFound
+		return foundThread, models.NotFound
 	}
-	return thread, nil
+	return foundThread, nil
+}
+
+func (u *UseCase) GetPosts(ctx context.Context, slugOrId string, sort string, limit string, since string, desc string) ([]models.Post, error) {
+	foundThread, err := u.repo.GetThread(ctx, slugOrId)
+	if err != nil {
+		return []models.Post{}, models.NotFound
+	}
+
+	switch sort {
+	case "flat":
+		return u.repo.GetPostsFlat(ctx, foundThread.ID, limit, since, desc)
+	case "tree":
+		return u.repo.GetPostsTree(ctx, foundThread.ID, limit, since, desc)
+	case "parent_tree":
+		return u.repo.GetPostsParentTree(ctx, foundThread.ID, limit, since, desc)
+	default:
+		return u.repo.GetPostsFlat(ctx, foundThread.ID, limit, since, desc)
+	}
 }

@@ -17,7 +17,11 @@ func NewRepoPostgres(Conn *pgxpool.Pool) user.Repository {
 
 func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, error) {
 	var userM models.User
-	const SelectUserByNickname = `SELECT nickname, fullname, about, email FROM users WHERE nickname=$1 LIMIT 1;`
+	const SelectUserByNickname = `SELECT nickname, fullname, about, email 
+																FROM users 
+																WHERE nickname=$1 
+																LIMIT 1;`
+
 	row := r.Conn.QueryRow(ctx, SelectUserByNickname, name)
 	err := row.Scan(&userM.NickName, &userM.FullName, &userM.About, &userM.Email)
 	if err != nil {
@@ -27,7 +31,11 @@ func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, e
 }
 
 func (r *repoPostgres) CheckUserEmailOrNicknameUniq(usersS models.User) ([]models.User, error) {
-	const SelectUserByEmailOrNickname = "SELECT nickname, fullname, about, email FROM users WHERE nickname=$1 OR email=$2 LIMIT 2;"
+	const SelectUserByEmailOrNickname = `SELECT nickname, fullname, about, email 
+																			 FROM users 
+																			 WHERE nickname=$1 OR email=$2 
+																			 LIMIT 2;`
+
 	rows, err := r.Conn.Query(context.Background(), SelectUserByEmailOrNickname, usersS.NickName, usersS.Email)
 	defer rows.Close()
 	if err != nil {
@@ -47,7 +55,11 @@ func (r *repoPostgres) CheckUserEmailOrNicknameUniq(usersS models.User) ([]model
 
 func (r *repoPostgres) CheckUserEmailUniq(usersS models.User) ([]models.User, error) {
 	var userM models.User
-	const SelectUserByEmail = "SELECT nickname, fullname, about, email FROM users WHERE email=$1 LIMIT 1;"
+	const SelectUserByEmail = `SELECT nickname, fullname, about, email 
+														 FROM users 
+														 WHERE email=$1 
+														 LIMIT 1;`
+
 	row := r.Conn.QueryRow(context.Background(), SelectUserByEmail, usersS.Email) // TODO ctx
 	err := row.Scan(&userM.NickName, &userM.FullName, &userM.About, &userM.Email)
 	if err != nil {
@@ -59,7 +71,9 @@ func (r *repoPostgres) CheckUserEmailUniq(usersS models.User) ([]models.User, er
 }
 
 func (r *repoPostgres) CreateUser(ctx context.Context, user models.User) (models.User, error) {
-	const createUser = "INSERT INTO users (Nickname, FullName, About, Email) VALUES ($1, $2, $3, $4);"
+	const createUser = `INSERT INTO users (Nickname, FullName, About, Email) 
+											VALUES ($1, $2, $3, $4);`
+
 	_, err := r.Conn.Exec(ctx, createUser, user.NickName, user.FullName, user.About, user.Email)
 	if err != nil {
 		return models.User{}, models.InternalError
@@ -68,7 +82,12 @@ func (r *repoPostgres) CreateUser(ctx context.Context, user models.User) (models
 }
 
 func (r *repoPostgres) UpdateUser(ctx context.Context, user models.User) (models.User, error) {
-	const updateUser = "UPDATE users SET FullName=coalesce(nullif($2, ''), FullName), About=coalesce(nullif($3, ''), About), Email=coalesce(nullif($4, ''), Email) WHERE Nickname=$1 RETURNING *;"
+	const updateUser = `UPDATE users 
+											SET FullName=coalesce(nullif($2, ''), FullName), About=coalesce(nullif($3, ''), About), 
+											    Email=coalesce(nullif($4, ''), Email) 
+											WHERE Nickname=$1 
+											RETURNING *;`
+
 	row := r.Conn.QueryRow(ctx, updateUser, user.NickName, user.FullName, user.About, user.Email)
 	updatedUser := models.User{}
 	err := row.Scan(&updatedUser.NickName, &updatedUser.FullName, &updatedUser.About, &updatedUser.Email)
