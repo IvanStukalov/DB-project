@@ -6,7 +6,7 @@ import (
 )
 
 type UseCase interface {
-	GetPost(ctx context.Context, id string, related string) (models.WrappedPost, error)
+	GetPost(ctx context.Context, id string, related string) (models.PostFull, error)
 	UpdatePost(ctx context.Context, post models.Post) (models.Post, error)
 }
 

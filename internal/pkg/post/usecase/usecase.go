@@ -22,12 +22,12 @@ func NewRepoUsecase(repo post.Repository, fRepo forum.Repository, uRepo user.Rep
 	return &UseCase{repo: repo, fRepo: fRepo, uRepo: uRepo, tRepo: tRepo}
 }
 
-func (u *UseCase) GetPost(ctx context.Context, id string, related string) (models.WrappedPost, error) {
+func (u *UseCase) GetPost(ctx context.Context, id string, related string) (models.PostFull, error) {
 	var foundAuthor models.User
 	var foundForum models.Forum
 	var foundThread models.Thread
 
-	wrappedPost := models.WrappedPost{}
+	wrappedPost := models.PostFull{}
 
 	integerId, err := strconv.Atoi(id)
 	if err != nil {

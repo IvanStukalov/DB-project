@@ -19,7 +19,7 @@ type Post struct {
 	Path     pgtype.Int4Array `json:"path,omitempty"`
 }
 
-type WrappedPost struct {
+type PostFull struct {
 	Post   Post    `json:"post,omitempty"`
 	Author *User   `json:"author,omitempty"`
 	Forum  *Forum  `json:"forum,omitempty"`

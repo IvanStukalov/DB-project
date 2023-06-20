@@ -77,6 +77,7 @@ func main() {
 		forum.HandleFunc("/post/{id}/details", pHandler.UpdatePost).Methods(http.MethodPost)
 
 		forum.HandleFunc("/service/status", sHandler.Status).Methods(http.MethodGet)
+		forum.HandleFunc("/service/clear", sHandler.Clear).Methods(http.MethodPost)
 	}
 
 	http.Handle("/", muxRoute)

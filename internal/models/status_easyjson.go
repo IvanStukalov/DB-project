@@ -36,14 +36,14 @@ func easyjson727fe99aDecodeGithubComIvanStukalovDBProjectInternalModels(in *jlex
 			continue
 		}
 		switch key {
-		case "post":
-			out.Post = int(in.Int())
-		case "author":
-			out.Author = int(in.Int())
+		case "user":
+			out.User = int(in.Int())
 		case "forum":
 			out.Forum = int(in.Int())
 		case "thread":
 			out.Thread = int(in.Int())
+		case "post":
+			out.Post = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -59,14 +59,9 @@ func easyjson727fe99aEncodeGithubComIvanStukalovDBProjectInternalModels(out *jwr
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"post\":"
+		const prefix string = ",\"user\":"
 		out.RawString(prefix[1:])
-		out.Int(int(in.Post))
-	}
-	{
-		const prefix string = ",\"author\":"
-		out.RawString(prefix)
-		out.Int(int(in.Author))
+		out.Int(int(in.User))
 	}
 	{
 		const prefix string = ",\"forum\":"
@@ -77,6 +72,11 @@ func easyjson727fe99aEncodeGithubComIvanStukalovDBProjectInternalModels(out *jwr
 		const prefix string = ",\"thread\":"
 		out.RawString(prefix)
 		out.Int(int(in.Thread))
+	}
+	{
+		const prefix string = ",\"post\":"
+		out.RawString(prefix)
+		out.Int(int(in.Post))
 	}
 	out.RawByte('}')
 }

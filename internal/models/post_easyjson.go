@@ -18,7 +18,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(in *jlexer.Lexer, out *WrappedPost) {
+func easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(in *jlexer.Lexer, out *PostFull) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -79,7 +79,7 @@ func easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(in *jlex
 		in.Consumed()
 	}
 }
-func easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(out *jwriter.Writer, in WrappedPost) {
+func easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(out *jwriter.Writer, in PostFull) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -123,26 +123,26 @@ func easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(out *jwr
 }
 
 // MarshalJSON supports json.Marshaler interface
-func (v WrappedPost) MarshalJSON() ([]byte, error) {
+func (v PostFull) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
 	easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v WrappedPost) MarshalEasyJSON(w *jwriter.Writer) {
+func (v PostFull) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson5a72dc82EncodeGithubComIvanStukalovDBProjectInternalModels(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
-func (v *WrappedPost) UnmarshalJSON(data []byte) error {
+func (v *PostFull) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
 	easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *WrappedPost) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *PostFull) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels(l, v)
 }
 func easyjson5a72dc82DecodeGithubComIvanStukalovDBProjectInternalModels1(in *jlexer.Lexer, out *Post) {
