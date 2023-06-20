@@ -80,18 +80,13 @@ func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(newPosts) == 0 {
-		utils.Response(w, http.StatusCreated, []models.Post{})
-		return
-	}
-
 	finalPosts, err := h.uc.CreatePosts(r.Context(), slugOrId, newPosts)
 	if err == models.NotFound {
 		utils.Response(w, http.StatusNotFound, models.ErrMsg{Msg: "not found thread " + slugOrId})
 		return
 	}
 	if err == models.Conflict {
-		utils.Response(w, http.StatusConflict, finalPosts)
+		utils.Response(w, http.StatusConflict, models.ErrMsg{Msg: "invalid parent"})
 		return
 	}
 	if err == models.InternalError {

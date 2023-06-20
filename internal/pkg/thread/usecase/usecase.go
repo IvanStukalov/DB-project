@@ -3,15 +3,19 @@ package usecase
 import (
 	"context"
 	"github.com/IvanStukalov/DB_project/internal/models"
+	"github.com/IvanStukalov/DB_project/internal/pkg/post"
 	"github.com/IvanStukalov/DB_project/internal/pkg/thread"
+	"github.com/IvanStukalov/DB_project/internal/pkg/user"
 )
 
 type UseCase struct {
-	repo thread.Repository
+	repo  thread.Repository
+	pRepo post.Repository
+	uRepo user.Repository
 }
 
-func NewRepoUsecase(repo thread.Repository) thread.UseCase {
-	return &UseCase{repo: repo}
+func NewRepoUsecase(repo thread.Repository, pRepo post.Repository, uRepo user.Repository) thread.UseCase {
+	return &UseCase{repo: repo, pRepo: pRepo, uRepo: uRepo}
 }
 
 func (u *UseCase) UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error) {
@@ -37,6 +41,10 @@ func (u *UseCase) CreatePosts(ctx context.Context, slugOrId string, posts []mode
 		return posts, models.NotFound
 	}
 
+	if len(posts) == 0 {
+		return []models.Post{}, nil
+	}
+
 	createdPosts, err := u.repo.CreatePosts(ctx, foundThread.ID, foundForum, posts)
 	if err != nil {
 		return createdPosts, err
@@ -45,6 +53,11 @@ func (u *UseCase) CreatePosts(ctx context.Context, slugOrId string, posts []mode
 }
 
 func (u *UseCase) CreateVote(ctx context.Context, slugOrId string, vote models.Vote) (models.Thread, error) {
+	_, err := u.uRepo.GetUser(ctx, vote.Nickname)
+	if err == models.NotFound {
+		return models.Thread{}, models.NotFound
+	}
+
 	foundThread, err := u.repo.GetThread(ctx, slugOrId)
 	if err != nil {
 		return models.Thread{}, models.NotFound

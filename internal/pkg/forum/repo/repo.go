@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/forum"
 	"github.com/jackc/pgx/v4"
@@ -214,7 +213,6 @@ func (r *repoPostgres) GetUsers(ctx context.Context, slug string, limit string, 
 	}
 
 	if err != nil {
-		fmt.Println("select: ", err.Error())
 		return []models.User{}, models.NotFound
 	}
 	defer rows.Close()
@@ -223,7 +221,6 @@ func (r *repoPostgres) GetUsers(ctx context.Context, slug string, limit string, 
 		userOne := models.User{}
 		err = rows.Scan(&userOne.NickName, &userOne.FullName, &userOne.About, &userOne.Email)
 		if err != nil {
-			fmt.Println("scan: ", err.Error())
 			return []models.User{}, models.InternalError
 		}
 		users = append(users, userOne)

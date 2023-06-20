@@ -35,19 +35,18 @@ func main() {
 	}
 
 	uRepo := userRepo.NewRepoPostgres(pool)
-	uUsecase := userUsecase.NewRepoUsecase(uRepo)
-	uHandler := userDelivery.NewUserHandler(uUsecase)
-
 	tRepo := threadRepo.NewRepoPostgres(pool)
-	tUsecase := threadUsecase.NewRepoUsecase(tRepo)
-	tHandler := threadDelivery.NewThreadHandler(tUsecase)
-
 	fRepo := forumRepo.NewRepoPostgres(pool)
-	fUsecase := forumUsecase.NewRepoUsecase(fRepo, uRepo, tRepo)
-	fHandler := forumDelivery.NewForumHandler(fUsecase)
-
 	pRepo := postRepo.NewRepoPostgres(pool)
-	pUsecase := postUsecase.NewRepoUsecase(pRepo)
+
+	uUsecase := userUsecase.NewRepoUsecase(uRepo)
+	tUsecase := threadUsecase.NewRepoUsecase(tRepo, pRepo, uRepo)
+	fUsecase := forumUsecase.NewRepoUsecase(fRepo, uRepo, tRepo)
+	pUsecase := postUsecase.NewRepoUsecase(pRepo, fRepo, uRepo, tRepo)
+
+	uHandler := userDelivery.NewUserHandler(uUsecase)
+	tHandler := threadDelivery.NewThreadHandler(tUsecase)
+	fHandler := forumDelivery.NewForumHandler(fUsecase)
 	pHandler := postDelivery.NewPostHandler(pUsecase)
 
 	forum := muxRoute.PathPrefix("/api").Subrouter()
@@ -68,6 +67,7 @@ func main() {
 		forum.HandleFunc("/thread/{slug_or_id}/vote", tHandler.CreateVote).Methods(http.MethodPost)
 		forum.HandleFunc("/thread/{slug_or_id}/posts", tHandler.GetPosts).Methods(http.MethodGet)
 
+		forum.HandleFunc("/post/{id}/details", pHandler.GetPost).Methods(http.MethodGet)
 		forum.HandleFunc("/post/{id}/details", pHandler.UpdatePost).Methods(http.MethodPost)
 	}
 

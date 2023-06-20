@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"strconv"
+	"strings"
 )
 
 type repoPostgres struct {
@@ -34,23 +35,19 @@ func (r *repoPostgres) GetForumByThread(ctx context.Context, id int) (string, er
 }
 
 func (r *repoPostgres) UpdateThread(ctx context.Context, slugOrId string, thread models.Thread) (models.Thread, error) {
+	updateThread := `UPDATE threads 
+									 SET Title=coalesce(nullif($1, ''), Title), Author=coalesce(nullif($2, ''), Author), 
+											 Forum=coalesce(nullif($3, ''), Forum), Message=coalesce(nullif($4, ''), Message), 
+										   Votes=coalesce(nullif($5, 0), Votes), Created=coalesce(nullif($6, make_timestamp(1, 1, 1, 0, 0, 0)), Created) `
 	var row pgx.Row
 	if id, err := strconv.Atoi(slugOrId); err == nil {
-		const updateThread = `UPDATE threads 
-													SET Title=coalesce(nullif($1, ''), Title), Author=coalesce(nullif($2, ''), Author), 
-													    Forum=coalesce(nullif($3, ''), Forum), Message=coalesce(nullif($4, ''), Message), 
-													    Votes=coalesce(nullif($5, 0), Votes), Created=coalesce(nullif($6, make_timestamp(1, 1, 1, 0, 0, 0)), Created) 
-													WHERE Id = $7 
-													RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
+		updateThread += `	WHERE Id = $7 
+											RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
 
 		row = r.Conn.QueryRow(ctx, updateThread, thread.Title, thread.Author, thread.Forum, thread.Message, thread.Votes, thread.Created, id)
 	} else {
-		const updateThread = `UPDATE threads 
-													SET Title=coalesce(nullif($1, ''), Title), Author=coalesce(nullif($2, ''), Author), 
-													    Forum=coalesce(nullif($3, ''), Forum), Message=coalesce(nullif($4, ''), Message), 
-													    Votes=coalesce(nullif($5, 0), Votes), Created=coalesce(nullif($6, make_timestamp(1, 1, 1, 0, 0, 0)), Created) 
-													WHERE Slug = $7 
-													RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
+		updateThread += ` WHERE Slug = $7 
+											RETURNING Id, Title, Author, Forum, Message, Slug, Created;`
 
 		row = r.Conn.QueryRow(ctx, updateThread, thread.Title, thread.Author, thread.Forum, thread.Message, thread.Votes, thread.Created, slugOrId)
 	}
@@ -58,7 +55,7 @@ func (r *repoPostgres) UpdateThread(ctx context.Context, slugOrId string, thread
 	newThread := models.Thread{}
 	err := row.Scan(&newThread.ID, &newThread.Title, &newThread.Author, &newThread.Forum, &newThread.Message, &newThread.Slug, &newThread.Created)
 	if err != nil {
-		return thread, models.InternalError
+		return thread, models.NotFound
 	}
 	return newThread, nil
 }
@@ -87,29 +84,61 @@ func (r *repoPostgres) GetThread(ctx context.Context, slugOrId string) (models.T
 }
 
 func (r *repoPostgres) CreatePosts(ctx context.Context, thread int, forum string, posts []models.Post) ([]models.Post, error) {
-	const insertPost = `INSERT INTO posts (Author, Created, Forum, IsEdited, Message, Parent, Thread) 
-											VALUES ($1, $2, $3, $4, $5, $6, $7) 
-											RETURNING Id, Author, Created, Forum, IsEdited, Message, Parent, Thread, Path;`
+	var insertPost = `INSERT INTO posts (Author, Created, Forum, IsEdited, Message, Parent, Thread) VALUES `
+	values := make([]interface{}, 0)
 
 	var finalPosts []models.Post
-	for _, post := range posts {
-		row := r.Conn.QueryRow(ctx, insertPost, post.Author, post.Created, forum, post.IsEdited, post.Message, post.Parent, thread)
-		finalPost := models.Post{}
-		err := row.Scan(&finalPost.ID, &finalPost.Author, &finalPost.Created, &finalPost.Forum, &finalPost.IsEdited, &finalPost.Message, &finalPost.Parent, &finalPost.Thread, &finalPost.Path)
+	for i, post := range posts {
+		insertPost += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d),", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
+		values = append(values, post.Author, post.Created, forum, post.IsEdited, post.Message, post.Parent, thread)
 
-		if err != nil {
-			if pqError, ok := err.(*pgconn.PgError); ok {
-				switch pqError.Code {
-				case "23503": // foreign key violation
-					return posts, models.NotFound
-				default:
-					return posts, models.InternalError
-				}
+		if post.Parent != 0 {
+			foundThread := 0
+			selectThread := `SELECT Thread FROM posts WHERE Id = $1;`
+			row := r.Conn.QueryRow(ctx, selectThread, post.Parent)
+			err := row.Scan(&foundThread)
+
+			if err != nil || foundThread != thread {
+				return []models.Post{}, models.Conflict
 			}
-			return posts, models.InternalError
 		}
-		finalPosts = append(finalPosts, finalPost)
+
+		selectAuthor := `SELECT Nickname FROM users WHERE Nickname = $1;`
+		row := r.Conn.QueryRow(ctx, selectAuthor, post.Author)
+		var author string
+		err := row.Scan(&author)
+		if err != nil {
+			return []models.Post{}, models.NotFound
+		}
 	}
+
+	insertPost = strings.TrimSuffix(insertPost, ",")
+	insertPost += ` RETURNING Id, Author, Created, Forum, IsEdited, Message, Parent, Thread, Path;`
+	rows, err := r.Conn.Query(ctx, insertPost, values...)
+
+	if err != nil {
+		if pqError, ok := err.(*pgconn.PgError); ok {
+			switch pqError.Code {
+			case "23503": // foreign key violation
+				return posts, models.NotFound
+			default:
+				return posts, models.InternalError
+			}
+		}
+	}
+	defer rows.Close()
+
+	for range posts {
+		if rows.Next() {
+			foundPost := models.Post{}
+			err = rows.Scan(&foundPost.ID, &foundPost.Author, &foundPost.Created, &foundPost.Forum, &foundPost.IsEdited, &foundPost.Message, &foundPost.Parent, &foundPost.Thread, &foundPost.Path)
+			if err != nil {
+				return posts, models.InternalError
+			}
+			finalPosts = append(finalPosts, foundPost)
+		}
+	}
+
 	return finalPosts, nil
 }
 

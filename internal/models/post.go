@@ -16,5 +16,12 @@ type Post struct {
 	Forum    string           `json:"forum"`
 	Thread   int              `json:"thread"`
 	Created  time.Time        `json:"created,omitempty"`
-	Path     pgtype.Int4Array `json:"path"`
+	Path     pgtype.Int4Array `json:"path,omitempty"`
+}
+
+type WrappedPost struct {
+	Post   Post    `json:"post,omitempty"`
+	Author *User   `json:"author,omitempty"`
+	Forum  *Forum  `json:"forum,omitempty"`
+	Thread *Thread `json:"thread,omitempty"`
 }
