@@ -23,18 +23,12 @@ import (
 	"net/http"
 )
 
-// sudo docker rm -f my_container
-// sudo docker build -t docker .
-// sudo docker run -p 5000:5000 --name my_container -t docker
-// ./technopark-dbms-forum func -u http://localhost:5000/api -r report.html
-
 func main() {
 	muxRoute := mux.NewRouter()
-	//conn := "postgres://postgres:password@127.0.0.1:5432/bd?sslmode=disable&pool_max_conns=1000"
 	conn := "postgres://docker:docker@127.0.0.1:5432/docker?sslmode=disable&pool_max_conns=1000"
 	pool, err := pgxpool.Connect(context.Background(), conn)
 	if err != nil {
-		log.Fatal("No connection to postgres", err)
+		log.Fatal("Connection to postgres failed", err)
 	}
 
 	uRepo := userRepo.NewRepoPostgres(pool)

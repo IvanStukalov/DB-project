@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type repoPostgres struct {
@@ -87,10 +88,11 @@ func (r *repoPostgres) CreatePosts(ctx context.Context, thread int, forum string
 	var insertPost = `INSERT INTO posts (Author, Created, Forum, IsEdited, Message, Parent, Thread) VALUES `
 	values := make([]interface{}, 0)
 
+	createdDate := time.Now()
 	var finalPosts []models.Post
 	for i, post := range posts {
 		insertPost += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d),", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
-		values = append(values, post.Author, post.Created, forum, post.IsEdited, post.Message, post.Parent, thread)
+		values = append(values, post.Author, createdDate, forum, post.IsEdited, post.Message, post.Parent, thread)
 
 		if post.Parent != 0 {
 			foundThread := 0

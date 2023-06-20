@@ -19,27 +19,25 @@ func (u *UseCase) GetUser(ctx context.Context, user models.User) (models.User, e
 }
 
 func (u *UseCase) CreateUser(ctx context.Context, user models.User) ([]models.User, error) {
-	chUsers, _ := u.repo.CheckUserEmailOrNicknameUniq(user)
-	if len(chUsers) > 0 {
-		return chUsers, models.Conflict
+	foundUsers, _ := u.repo.IsEmailOrNicknameUniq(ctx, user)
+	if len(foundUsers) > 0 {
+		return foundUsers, models.Conflict
 	}
-	usersS := make([]models.User, 0)
-	cUser, _ := u.repo.CreateUser(ctx, user)
-	usersS = append(usersS, cUser)
-	return usersS, nil
+	users := make([]models.User, 0)
+	newUser, _ := u.repo.CreateUser(ctx, user)
+	users = append(users, newUser)
+	return users, nil
 }
 
-func (u *UseCase) UpdateUser(ctx context.Context, user models.User) ([]models.User, error) {
-	chUsers, err := u.repo.CheckUserEmailUniq(user)
+func (u *UseCase) UpdateUser(ctx context.Context, user models.User) (models.User, error) {
+	foundUsers, err := u.repo.IsEmailUniq(ctx, user)
 	if err == models.Conflict {
-		return chUsers, models.Conflict
+		return foundUsers, models.Conflict
 	}
 
-	usersS := make([]models.User, 0)
 	updatedUser, err := u.repo.UpdateUser(ctx, user)
-	usersS = append(usersS, updatedUser)
 	if err != nil {
-		return nil, models.NotFound
+		return models.User{}, models.NotFound
 	}
-	return usersS, nil
+	return updatedUser, nil
 }

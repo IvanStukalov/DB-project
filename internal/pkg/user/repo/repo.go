@@ -30,13 +30,13 @@ func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, e
 	return userM, nil
 }
 
-func (r *repoPostgres) CheckUserEmailOrNicknameUniq(usersS models.User) ([]models.User, error) {
+func (r *repoPostgres) IsEmailOrNicknameUniq(ctx context.Context, usersS models.User) ([]models.User, error) {
 	const SelectUserByEmailOrNickname = `SELECT nickname, fullname, about, email 
 																			 FROM users 
 																			 WHERE nickname=$1 OR email=$2 
 																			 LIMIT 2;`
 
-	rows, err := r.Conn.Query(context.Background(), SelectUserByEmailOrNickname, usersS.NickName, usersS.Email)
+	rows, err := r.Conn.Query(ctx, SelectUserByEmailOrNickname, usersS.NickName, usersS.Email)
 	defer rows.Close()
 	if err != nil {
 		return []models.User{}, models.InternalError
@@ -53,21 +53,18 @@ func (r *repoPostgres) CheckUserEmailOrNicknameUniq(usersS models.User) ([]model
 	return users, nil
 }
 
-func (r *repoPostgres) CheckUserEmailUniq(usersS models.User) ([]models.User, error) {
+func (r *repoPostgres) IsEmailUniq(ctx context.Context, usersS models.User) (models.User, error) {
 	var userM models.User
 	const SelectUserByEmail = `SELECT nickname, fullname, about, email 
 														 FROM users 
-														 WHERE email=$1 
-														 LIMIT 1;`
+														 WHERE email=$1`
 
-	row := r.Conn.QueryRow(context.Background(), SelectUserByEmail, usersS.Email) // TODO ctx
+	row := r.Conn.QueryRow(ctx, SelectUserByEmail, usersS.Email)
 	err := row.Scan(&userM.NickName, &userM.FullName, &userM.About, &userM.Email)
 	if err != nil {
-		return []models.User{}, models.NotFound
+		return models.User{}, models.NotFound
 	}
-	users := make([]models.User, 0)
-	users = append(users, userM)
-	return users, models.Conflict
+	return userM, models.Conflict
 }
 
 func (r *repoPostgres) CreateUser(ctx context.Context, user models.User) (models.User, error) {

@@ -38,8 +38,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		utils.Response(w, http.StatusConflict, finalUser)
 		return
 	}
-	newU := finalUser[0]
-	utils.Response(w, http.StatusCreated, newU) // TODO сразу прокинуть finalUser[0]
+	utils.Response(w, http.StatusCreated, finalUser[0])
 	return
 }
 
@@ -89,6 +88,6 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.Response(w, http.StatusOK, finalUser[0])
+	utils.Response(w, http.StatusOK, finalUser)
 	return
 }

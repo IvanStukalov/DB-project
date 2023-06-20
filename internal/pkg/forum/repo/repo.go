@@ -58,24 +58,24 @@ func (r *repoPostgres) CreateThread(ctx context.Context, thread models.Thread) (
 func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, limit string, since string, desc string) ([]models.Thread, error) {
 	var rows pgx.Rows
 	var err error
+
+	selectThreadByForum := `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
+													FROM threads`
+
 	if since != "" {
 		if desc == "true" {
 			if limit != "" {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum AND Created <= $2 
-																		 ORDER BY Created DESC 
-																		 LIMIT $3;`
+				selectThreadByForum += ` WHERE $1 = Forum AND Created <= $2 
+																 ORDER BY Created DESC 
+																 LIMIT $3;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, since, limit)
 				if err != nil {
 					return []models.Thread{}, models.InternalError
 				}
 			} else {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum AND Created <= $2 
-																		 ORDER BY Created DESC;`
+				selectThreadByForum += ` WHERE $1 = Forum AND Created <= $2 
+																 ORDER BY Created DESC;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, since)
 				if err != nil {
@@ -84,21 +84,17 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 			}
 		} else {
 			if limit != "" {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum AND Created >= $2 
-																		 ORDER BY Created 
-																		 LIMIT $3;`
+				selectThreadByForum += ` WHERE $1 = Forum AND Created >= $2 
+																ORDER BY Created 
+																LIMIT $3;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, since, limit)
 				if err != nil {
 					return []models.Thread{}, models.InternalError
 				}
 			} else {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum AND Created >= $2 
-																		 ORDER BY Created;`
+				selectThreadByForum += ` WHERE $1 = Forum AND Created >= $2 
+																 ORDER BY Created;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, since)
 				if err != nil {
@@ -109,22 +105,17 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 	} else {
 		if desc == "true" {
 			if limit != "" {
-
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum 
-																		 ORDER BY Created DESC 
-																		 LIMIT $2;`
+				selectThreadByForum += ` WHERE $1 = Forum 
+																 ORDER BY Created DESC 
+																 LIMIT $2;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, limit)
 				if err != nil {
 					return []models.Thread{}, models.InternalError
 				}
 			} else {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum 
-																		 ORDER BY Created DESC;`
+				selectThreadByForum += ` WHERE $1 = Forum 
+																 ORDER BY Created DESC;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug)
 				if err != nil {
@@ -133,21 +124,17 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 			}
 		} else {
 			if limit != "" {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum 
-																		 ORDER BY Created 
-																		 LIMIT $2;`
+				selectThreadByForum += ` WHERE $1 = Forum 
+																 ORDER BY Created 
+																 LIMIT $2;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, limit)
 				if err != nil {
 					return []models.Thread{}, models.InternalError
 				}
 			} else {
-				const selectThreadByForum = `SELECT Id, Title, Author, Forum, Message, Votes, Slug, Created 
-																		 FROM threads 
-																		 WHERE $1 = Forum 
-																		 ORDER BY Created;`
+				selectThreadByForum += ` WHERE $1 = Forum 
+																 ORDER BY Created;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug)
 				if err != nil {
