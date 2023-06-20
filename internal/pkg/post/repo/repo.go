@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"github.com/IvanStukalov/DB_project/internal/models"
 	"github.com/IvanStukalov/DB_project/internal/pkg/post"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -40,7 +39,6 @@ func (r *repoPostgres) UpdatePost(ctx context.Context, post models.Post) (models
 	finalPost := models.Post{}
 	err := row.Scan(&finalPost.ID, &finalPost.Author, &finalPost.Created, &finalPost.Forum, &finalPost.IsEdited, &finalPost.Message, &finalPost.Parent, &finalPost.Thread)
 	if err != nil {
-		fmt.Println(err.Error())
 		return post, models.NotFound
 	}
 	return finalPost, nil
