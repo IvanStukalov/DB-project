@@ -8,6 +8,9 @@ import (
 	postDelivery "github.com/IvanStukalov/DB_project/internal/pkg/post/delivery"
 	postRepo "github.com/IvanStukalov/DB_project/internal/pkg/post/repo"
 	postUsecase "github.com/IvanStukalov/DB_project/internal/pkg/post/usecase"
+	serviceDelivery "github.com/IvanStukalov/DB_project/internal/pkg/service/delivery"
+	serviceRepo "github.com/IvanStukalov/DB_project/internal/pkg/service/repo"
+	serviceUsecase "github.com/IvanStukalov/DB_project/internal/pkg/service/usecase"
 	threadDelivery "github.com/IvanStukalov/DB_project/internal/pkg/thread/delivery"
 	threadRepo "github.com/IvanStukalov/DB_project/internal/pkg/thread/repo"
 	threadUsecase "github.com/IvanStukalov/DB_project/internal/pkg/thread/usecase"
@@ -38,16 +41,19 @@ func main() {
 	tRepo := threadRepo.NewRepoPostgres(pool)
 	fRepo := forumRepo.NewRepoPostgres(pool)
 	pRepo := postRepo.NewRepoPostgres(pool)
+	sRepo := serviceRepo.NewRepoPostgres(pool)
 
 	uUsecase := userUsecase.NewRepoUsecase(uRepo)
 	tUsecase := threadUsecase.NewRepoUsecase(tRepo, pRepo, uRepo)
 	fUsecase := forumUsecase.NewRepoUsecase(fRepo, uRepo, tRepo)
 	pUsecase := postUsecase.NewRepoUsecase(pRepo, fRepo, uRepo, tRepo)
+	sUsecase := serviceUsecase.NewRepoUsecase(sRepo)
 
 	uHandler := userDelivery.NewUserHandler(uUsecase)
 	tHandler := threadDelivery.NewThreadHandler(tUsecase)
 	fHandler := forumDelivery.NewForumHandler(fUsecase)
 	pHandler := postDelivery.NewPostHandler(pUsecase)
+	sHandler := serviceDelivery.NewServiceHandler(sUsecase)
 
 	forum := muxRoute.PathPrefix("/api").Subrouter()
 	{
@@ -69,6 +75,8 @@ func main() {
 
 		forum.HandleFunc("/post/{id}/details", pHandler.GetPost).Methods(http.MethodGet)
 		forum.HandleFunc("/post/{id}/details", pHandler.UpdatePost).Methods(http.MethodPost)
+
+		forum.HandleFunc("/service/status", sHandler.Status).Methods(http.MethodGet)
 	}
 
 	http.Handle("/", muxRoute)
