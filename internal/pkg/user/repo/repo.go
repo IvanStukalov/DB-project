@@ -17,9 +17,9 @@ func NewRepoPostgres(Conn *pgxpool.Pool) user.Repository {
 
 func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, error) {
 	var userM models.User
-	const SelectUserByNickname = `SELECT nickname, fullname, about, email 
+	const SelectUserByNickname = `SELECT Nickname, Fullname, About, Email 
 																FROM users 
-																WHERE nickname=$1 
+																WHERE Nickname=$1 
 																LIMIT 1;`
 
 	row := r.Conn.QueryRow(ctx, SelectUserByNickname, name)
@@ -31,9 +31,9 @@ func (r *repoPostgres) GetUser(ctx context.Context, name string) (models.User, e
 }
 
 func (r *repoPostgres) IsEmailOrNicknameUniq(ctx context.Context, usersS models.User) ([]models.User, error) {
-	const SelectUserByEmailOrNickname = `SELECT nickname, fullname, about, email 
+	const SelectUserByEmailOrNickname = `SELECT Nickname, Fullname, About, Email 
 																			 FROM users 
-																			 WHERE nickname=$1 OR email=$2 
+																			 WHERE Nickname=$1 OR Email=$2 
 																			 LIMIT 2;`
 
 	rows, err := r.Conn.Query(ctx, SelectUserByEmailOrNickname, usersS.NickName, usersS.Email)
@@ -55,9 +55,9 @@ func (r *repoPostgres) IsEmailOrNicknameUniq(ctx context.Context, usersS models.
 
 func (r *repoPostgres) IsEmailUniq(ctx context.Context, usersS models.User) (models.User, error) {
 	var userM models.User
-	const SelectUserByEmail = `SELECT nickname, fullname, about, email 
+	const SelectUserByEmail = `SELECT Nickname, Fullname, About, Email 
 														 FROM users 
-														 WHERE email=$1`
+														 WHERE Email=$1`
 
 	row := r.Conn.QueryRow(ctx, SelectUserByEmail, usersS.Email)
 	err := row.Scan(&userM.NickName, &userM.FullName, &userM.About, &userM.Email)

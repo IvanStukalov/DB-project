@@ -29,7 +29,7 @@ func (r *repoPostgres) CreateForum(ctx context.Context, forum models.Forum) (mod
 func (r *repoPostgres) GetForum(ctx context.Context, slug string) (models.Forum, error) {
 	const selectForumBySlug = `SELECT Title, "user", Slug, Posts, Threads 
 														 FROM forum 
-														 WHERE $1 = slug;`
+														 WHERE $1 = Slug;`
 
 	row := r.Conn.QueryRow(ctx, selectForumBySlug, slug)
 	finalForum := models.Forum{}
@@ -85,8 +85,8 @@ func (r *repoPostgres) GetThreadByForumSlug(ctx context.Context, slug string, li
 		} else {
 			if limit != "" {
 				selectThreadByForum += ` WHERE $1 = Forum AND Created >= $2 
-																ORDER BY Created 
-																LIMIT $3;`
+																 ORDER BY Created 
+																 LIMIT $3;`
 
 				rows, err = r.Conn.Query(ctx, selectThreadByForum, slug, since, limit)
 				if err != nil {

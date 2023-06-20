@@ -24,7 +24,7 @@ func NewRepoPostgres(Conn *pgxpool.Pool) thread.Repository {
 func (r *repoPostgres) GetForumByThread(ctx context.Context, id int) (string, error) {
 	const selectForumByThread = `SELECT Forum 
 															 FROM threads 
-															 WHERE $1 = Id;`
+															 WHERE Id = $1;`
 
 	row := r.Conn.QueryRow(ctx, selectForumByThread, id)
 	var forumSlug string
@@ -320,40 +320,37 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 }
 
 func (r *repoPostgres) GetPostsParentTree(ctx context.Context, thread int, limit string, since string, desc string) ([]models.Post, error) {
-	var rows pgx.Rows
+	selectPostParents := fmt.Sprintf(`SELECT Id FROM posts WHERE Thread = %d AND Parent = 0 `, thread)
 
-	parents := fmt.Sprintf(`SELECT Id FROM posts WHERE Thread = %d AND Parent = 0 `, thread)
-
-	if since != "" {
+	if since == "" {
 		if desc == "true" {
-			parents += ` AND Path[1] < ` + fmt.Sprintf(`(SELECT Path[1] FROM posts WHERE Id = %s) `, since)
+			selectPostParents += ` ORDER BY Id DESC `
 		} else {
-			parents += ` AND Path[1] > ` + fmt.Sprintf(`(SELECT Path[1] FROM posts WHERE Id = %s) `, since)
+			selectPostParents += ` ORDER BY Id ASC `
+		}
+	} else {
+		if desc == "true" {
+			selectPostParents += fmt.Sprintf(` AND Path[1] < (SELECT Path[1] FROM posts WHERE Id = %s) ORDER BY Id DESC `, since)
+		} else {
+			selectPostParents += fmt.Sprintf(` AND Path[1] > (SELECT Path[1] FROM posts WHERE Id = %s) ORDER BY Id ASC `, since)
 		}
 	}
 
-	if desc == "true" {
-		parents += ` ORDER BY Id DESC `
-	} else {
-		parents += ` ORDER BY Id ASC `
-	}
-
 	if limit != "" {
-		parents += " LIMIT " + limit
+		selectPostParents += " LIMIT " + limit
 	}
 
-	query := fmt.Sprintf(
-		`SELECT Id, Author, Created, Forum, IsEdited, Message, Parent, Thread FROM posts WHERE Path[1] = ANY (%s) `, parents)
+	selectPosts := fmt.Sprintf(`SELECT Id, Author, Created, Forum, IsEdited, Message, Parent, Thread FROM posts WHERE Path[1] = ANY (%s) `, selectPostParents)
 
 	if desc == "true" {
-		query += ` ORDER BY Path[1] DESC, Path, Id `
+		selectPosts += ` ORDER BY Path[1] DESC, Path, Id `
 	} else {
-		query += ` ORDER BY Path[1] ASC, Path, Id `
+		selectPosts += ` ORDER BY Path[1] ASC, Path, Id `
 	}
 
-	rows, _ = r.Conn.Query(ctx, query)
-	posts := make([]models.Post, 0)
+	rows, _ := r.Conn.Query(ctx, selectPosts)
 	defer rows.Close()
+	posts := make([]models.Post, 0)
 	for rows.Next() {
 		onePost := models.Post{}
 		err := rows.Scan(&onePost.ID, &onePost.Author, &onePost.Created, &onePost.Forum, &onePost.IsEdited, &onePost.Message, &onePost.Parent, &onePost.Thread)
