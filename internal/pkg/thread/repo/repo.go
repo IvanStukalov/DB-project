@@ -256,8 +256,8 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 
 	if limit == "" {
 		if since != "" && desc == "true" {
-			selectPosts += ` JOIN posts parent ON parent.id = $2 
-											 WHERE posts.path < parent.path AND posts.thread = $1 
+			selectPosts += ` JOIN posts last ON last.id = $2 
+											 WHERE posts.path < last.path AND posts.thread = $1 
 											 ORDER BY posts.path DESC, posts.id DESC`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since)
 		}
@@ -267,8 +267,8 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread)
 		}
 		if since != "" && desc != "true" {
-			selectPosts += ` JOIN posts parent ON parent.id = $2 
-											 WHERE posts.path > parent.path AND posts.thread = $1 
+			selectPosts += ` JOIN posts last ON last.id = $2 
+											 WHERE posts.path > last.path AND posts.thread = $1 
 											 ORDER BY posts.path ASC, posts.id ASC`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since)
 		}
@@ -279,8 +279,8 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 		}
 	} else {
 		if since != "" && desc == "true" {
-			selectPosts += ` JOIN posts parent ON parent.id = $2 
-											 WHERE posts.path < parent.path AND posts.thread = $1 
+			selectPosts += ` JOIN posts last ON last.id = $2 
+											 WHERE posts.path < last.path AND posts.thread = $1 
 											 ORDER BY posts.path DESC, posts.id DESC LIMIT $3`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since, limit)
 		}
@@ -290,8 +290,8 @@ func (r *repoPostgres) GetPostsTree(ctx context.Context, thread int, limit strin
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, limit)
 		}
 		if since != "" && desc != "true" {
-			selectPosts += ` JOIN posts parent ON parent.id = $2 
-											 WHERE posts.path > parent.path AND posts.thread = $1 
+			selectPosts += ` JOIN posts last ON last.id = $2 
+											 WHERE posts.path > last.path AND posts.thread = $1 
 											 ORDER BY posts.path ASC, posts.id ASC LIMIT $3`
 			rows, errQuery = r.Conn.Query(ctx, selectPosts, thread, since, limit)
 		}

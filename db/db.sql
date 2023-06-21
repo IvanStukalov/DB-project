@@ -1,30 +1,44 @@
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
-CREATE UNLOGGED TABLE users
-(
-    Nickname   CITEXT PRIMARY KEY,
-    FullName   TEXT NOT NULL,
-    About      TEXT NOT NULL DEFAULT '',
-    Email      CITEXT UNIQUE
-);
+-- tables --
 
 CREATE UNLOGGED TABLE forum
 (
-    Title    TEXT   NOT NULL,
+    Title    TEXT       NOT NULL,
     "user"   CITEXT,
-    Slug     CITEXT PRIMARY KEY,
-    Posts    INT    DEFAULT 0,
-    Threads  INT    DEFAULT 0
+    Slug     CITEXT     PRIMARY KEY,
+    Posts    INT        DEFAULT 0,
+    Threads  INT        DEFAULT 0
+);
+
+CREATE UNLOGGED TABLE users
+(
+    Nickname   CITEXT   PRIMARY KEY,
+    FullName   TEXT     NOT NULL,
+    About      TEXT     NOT NULL DEFAULT '',
+    Email      CITEXT   UNIQUE
+);
+
+CREATE UNLOGGED TABLE users_forum
+(
+    Nickname  CITEXT  NOT NULL,
+    FullName  TEXT    NOT NULL,
+    About     TEXT,
+    Email     CITEXT,
+    Slug      CITEXT  NOT NULL,
+    FOREIGN KEY (Nickname) REFERENCES "users" (Nickname),
+    FOREIGN KEY (Slug) REFERENCES "forum" (Slug),
+    UNIQUE (Nickname, Slug)
 );
 
 CREATE UNLOGGED TABLE threads
 (
-    Id      SERIAL    PRIMARY KEY,
-    Title   TEXT      NOT NULL,
-    Author  CITEXT    REFERENCES "users"(Nickname),
-    Forum   CITEXT    REFERENCES "forum"(Slug),
-    Message TEXT      NOT NULL,
-    Votes   INT       DEFAULT 0,
+    Id      SERIAL      PRIMARY KEY,
+    Title   TEXT        NOT NULL,
+    Author  CITEXT      REFERENCES "users"(Nickname),
+    Forum   CITEXT      REFERENCES "forum"(Slug),
+    Message TEXT        NOT NULL,
+    Votes   INT         DEFAULT 0,
     Slug    CITEXT,
     Created TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -46,7 +60,7 @@ CREATE UNLOGGED TABLE posts
 
 CREATE UNLOGGED TABLE votes
 (
-    ID       SERIAL PRIMARY KEY,
+    ID       SERIAL    PRIMARY KEY,
     Author   CITEXT    REFERENCES "users" (Nickname),
     Voice    INT       NOT NULL,
     Thread   INT,
@@ -54,19 +68,7 @@ CREATE UNLOGGED TABLE votes
     UNIQUE (Author, Thread)
 );
 
-
-CREATE UNLOGGED TABLE users_forum
-(
-    Nickname  CITEXT  NOT NULL,
-    FullName  TEXT    NOT NULL,
-    About     TEXT,
-    Email     CITEXT,
-    Slug      CITEXT  NOT NULL,
-    FOREIGN KEY (Nickname) REFERENCES "users" (Nickname),
-    FOREIGN KEY (Slug) REFERENCES "forum" (Slug),
-    UNIQUE (Nickname, Slug)
-);
-
+-- triggers --
 
 CREATE OR REPLACE FUNCTION addThread() RETURNS TRIGGER AS
 $update_forum$
@@ -86,13 +88,13 @@ CREATE TRIGGER on_insert_thread
 CREATE OR REPLACE FUNCTION addPost() RETURNS TRIGGER AS
 $update_forum$
 DECLARE
-    parent_path   INTEGER[];
+    post_parent_path INTEGER[];
 BEGIN
     IF (NEW.parent = 0) THEN
         NEW.path := array_append(NEW.path, NEW.id);
     ELSE
-        SELECT path FROM posts WHERE id = NEW.parent INTO parent_path;
-        NEW.path := parent_path || NEW.id;
+        SELECT path FROM posts WHERE id = NEW.parent INTO post_parent_path;
+        NEW.path := post_parent_path || NEW.id;
     END IF;
     UPDATE forum SET Posts=(Posts+1) WHERE Slug = NEW.Forum;
     return NEW;
@@ -179,7 +181,7 @@ CREATE TRIGGER update_users_forum
     FOR EACH ROW
     EXECUTE PROCEDURE UpdateUserForum();
 
--- indexes
+-- indexes --
 
 CREATE INDEX IF NOT EXISTS users__nickname_index ON users USING hash (Nickname);
 CREATE INDEX IF NOT EXISTS users__email_index ON users USING hash (Email);
