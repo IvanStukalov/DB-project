@@ -43,6 +43,16 @@ CREATE UNLOGGED TABLE threads
     Created TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+CREATE UNLOGGED TABLE votes
+(
+    ID       SERIAL    PRIMARY KEY,
+    Author   CITEXT    REFERENCES "users" (Nickname),
+    Voice    INT       NOT NULL,
+    Thread   INT,
+    FOREIGN KEY (thread) REFERENCES "threads" (id),
+    UNIQUE (Author, Thread)
+);
+
 CREATE UNLOGGED TABLE posts
 (
     Id        SERIAL      PRIMARY KEY,
@@ -56,16 +66,6 @@ CREATE UNLOGGED TABLE posts
     Path      INTEGER[],
     FOREIGN KEY (thread) REFERENCES "threads" (id),
     FOREIGN KEY (author) REFERENCES "users"  (nickname)
-);
-
-CREATE UNLOGGED TABLE votes
-(
-    ID       SERIAL    PRIMARY KEY,
-    Author   CITEXT    REFERENCES "users" (Nickname),
-    Voice    INT       NOT NULL,
-    Thread   INT,
-    FOREIGN KEY (thread) REFERENCES "threads" (id),
-    UNIQUE (Author, Thread)
 );
 
 -- triggers --
@@ -183,15 +183,19 @@ CREATE TRIGGER update_users_forum
 
 -- indexes --
 
+CREATE INDEX IF NOT EXISTS forum__slug_index ON forum USING hash (Slug);
+
 CREATE INDEX IF NOT EXISTS users__nickname_index ON users USING hash (Nickname);
 CREATE INDEX IF NOT EXISTS users__email_index ON users USING hash (Email);
 
-CREATE INDEX IF NOT EXISTS forum__slug_index ON forum USING hash (Slug);
+CREATE INDEX IF NOT EXISTS users_forum__slug_nickname_index ON users_forum (Slug, Nickname);
 
 CREATE INDEX IF NOT EXISTS threads__id_index ON threads USING hash (Id);
 CREATE INDEX IF NOT EXISTS threads__slug_index ON threads USING hash (Slug);
 CREATE INDEX IF NOT EXISTS threads__forum_index ON threads USING hash (Forum);
 CREATE INDEX IF NOT EXISTS threads__forum_created_index ON threads (Forum, Created);
+
+CREATE INDEX IF NOT EXISTS votes__author_thread_index ON votes (Author, Thread);
 
 CREATE INDEX IF NOT EXISTS posts__id_index ON posts USING hash (Id);
 CREATE INDEX IF NOT EXISTS posts__thread_index ON posts USING hash (Thread);
@@ -199,7 +203,3 @@ CREATE INDEX IF NOT EXISTS posts__thread_id_index ON posts (Thread, Id);
 CREATE INDEX IF NOT EXISTS posts__thread_parent_path_id_index ON posts (Thread, Parent, (path[1]), id);
 CREATE INDEX IF NOT EXISTS posts__path_index ON posts USING hash ((path[1]));
 CREATE INDEX IF NOT EXISTS posts__path_thread_id_index ON posts (path, thread, id);
-
-CREATE INDEX IF NOT EXISTS votes__author_thread_index ON votes (Author, Thread);
-
-CREATE INDEX IF NOT EXISTS users_forum__slug_nickname_index ON users_forum (Slug, Nickname);

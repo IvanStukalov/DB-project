@@ -3,7 +3,7 @@ package models
 import "errors"
 
 var (
-	Conflict      = errors.New("Conflict")
 	NotFound      = errors.New("NotFound")
+	Conflict      = errors.New("Conflict")
 	InternalError = errors.New("InternalError")
 )
